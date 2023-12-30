@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Log in</title>
+    <link th:href="@{/layui/css/layui.css}" rel="stylesheet">
+    <link href="//unpkg.com/layui@2.9.2/dist/css/layui.css" rel="stylesheet">
+</head>
+<body>
+    <form class="layui-form">
+        <div class="layui-form-item">
+            <div class="layui-input-group">
+                <div class="layui-input-split layui-input-prefix">
+                    用户名
+                </div>
+                <input type="text" placeholder="请输入用户名" class="layui-input">
+            </div>
+            <br>
+            <div class="layui-input-group">
+                <div class="layui-input-split layui-input-prefix">
+                    密码
+                </div>
+                <input type="password" placeholder="请输入密码" class="layui-input">
+            </div>
+            <br>
+            <div class="layui-btn-container">
+                <button type="submit" class="layui-btn layui-btn-lg">登陆</button>
+                <button type="reset" class="layui-btn layui-btn-lg layui-btn-danger">重置</button>
+                <a href="signupIndex" class="layui-btn-fluid">注册用户</a>
+            </div>
+        </div>
+    </form>
+</body>
+</html>
