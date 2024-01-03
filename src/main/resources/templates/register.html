@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Sign up</title>
+    <link th:href="@{/icon/mydrive.png}" rel="icon">
     <link th:href="@{/layui/css/layui.css}" rel="stylesheet">
     <link href="//unpkg.com/layui@2.9.2/dist/css/layui.css" rel="stylesheet">
+    <link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
 </head>
 <body>
-这是sign up界面
-    <form action="signup/" method="post" class="layui-form">
+    <div th:insert="~{common :: myheader}"></div>
+    这是sign up界面
+    <form action="registerSave" method="post" class="layui-form">
         <div class="layui-form-item">
             <div class="layui-input-group">
                 <div class="layui-input-split layui-input-prefix">
@@ -37,5 +40,6 @@
             </div>
         </div>
     </form>
+	<a href="index" class="layui-btn">返回首页</a>
 </body>
 </html>

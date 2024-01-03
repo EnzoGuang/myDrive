@@ -4,4 +4,16 @@
     <insert id="createUser">
         insert into user(user_name, password, email) values (#{userName}, #{password}, #{email});
     </insert>
+
+    <select id="findUserByEmail" resultMap="userResultMap">
+        select * from user where email=#{email} and password=#{password}
+    </select>
+    
+    <resultMap id="userResultMap" type="com.yg.mydrive.entity.User">
+        <result property="userName" column="user_name"></result>
+        <result property="password" column="password"></result>
+        <result property="email" column="email"></result>
+        <result property="userId" column="id"></result>
+        <result property="admin" column="admin"></result>
+    </resultMap>
 </mapper>

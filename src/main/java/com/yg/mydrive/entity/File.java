@@ -7,6 +7,8 @@ public class File {
     private int userId;
     private String uploadTime;
 
+    public File() {}
+
     public int getFileId() {
         return fileId;
     }

@@ -7,6 +7,8 @@ public class Folder {
     private int userId;
     private String createTime;
 
+    public Folder() {}
+
     public int getFolderId() {
         return folderId;
     }

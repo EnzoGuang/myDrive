@@ -7,6 +7,8 @@ public class User {
     private String email;
     private Boolean admin;
 
+    public User() {}
+
     public int getUserId() {
         return userId;
     }
