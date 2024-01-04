@@ -2,7 +2,7 @@ create table user(
                      id int primary key AUTO_INCREMENT,
                      email varchar(100) unique,
                      password varchar(32) COMMENT '使用md5算法进行加密可以考虑密码加盐',
-                     user_name varchar(50),
+                     username varchar(50),
                      admin BOOLEAN DEFAULT 0 COMMENT '0不是管理员1是管理员'
 );# 创建文件表
 create table file(

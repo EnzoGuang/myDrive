@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 	<head>
 		<meta charset="UTF-8">
-		<title>Title</title>
+		<title>HomePage</title>
 		<!-- 引入项目图标 -->
 		<link th:href="@{/icon/mydrive.png}" rel="icon">
 		<!-- 引入layui -->
@@ -11,6 +11,27 @@
 		<link th:href="@{bootstrap/css/bootstrap.min.css}" rel="stylesheet">
 	</head>
 	<body>
-这是homepage
+		这是homepage<br>
+		当前用户是
+		<table class="layui-table">
+			<thead class="layui-table-header">
+				<tr>
+					<th>id</th>
+					<th>username</th>
+					<th>password</th>
+					<th>email</th>
+					<th>admin</th>
+				</tr>
+			</thead>
+			<tbody class="layui-table-body">
+				<tr th:each="user:${currentUser}">
+					<td th:text="${user.getUserId()}"></td>
+					<td th:text="${user.getUserName()}"></td>
+					<td th:text="${user.getPassword()}"></td>
+					<td th:text="${user.getEmail()}"></td>
+					<td th:text="${user.getAdmin()}"></td>
+				</tr>
+			</tbody>
+		</table>
 	</body>
 </html>
