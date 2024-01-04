@@ -9,7 +9,7 @@
         <!--如果使用resultType的话，实体表的字段和实体类的属性名不匹配，可以通过查询完毕后起一个别名，和实体类的属性名相同就可以，
         如果使用resultMap的话，就需要定义映射关系
         -->
-        select user_name userName, password, email, id userId, admin from user where email=#{email} and password=#{password}
+        select user_name userName, password, email, id userId, admin from user where email=#{email}
     </select>
     <!-- resultMap样例
     <resultMap id="userResultMap" type="com.yg.mydrive.entity.User">

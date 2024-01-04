@@ -11,6 +11,9 @@
 		<link th:href="@{bootstrap/css/bootstrap.min.css}" rel="stylesheet">
 	</head>
 	<body>
+		<div>
+			<p th:text="${error}" style="color: red;"></p>
+		</div>
 		没有此用户，请
 		<a href="index">返回首页</a>
 		进行用户注册
