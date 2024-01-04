@@ -9,29 +9,34 @@
     <link th:href="@{/icon/mydrive.png}" rel="icon">
 </head>
 <body>
-    <div th:insert="~{common :: myheader}"></div>
-    <form action="login" class="layui-form" method="post">
-        <div class="layui-form-item">
-            <div class="layui-input-group">
-                <div class="layui-input-split layui-input-prefix">
-                    邮箱
-                </div>
-                <input type="text" name="email" placeholder="请输入邮箱" class="layui-input">
-            </div>
-            <br>
-            <div class="layui-input-group">
-                <div class="layui-input-split layui-input-prefix">
-                    密码
-                </div>
-                <input type="password" name="password" placeholder="请输入密码" class="layui-input">
-            </div>
-            <br>
-            <div class="layui-btn-container">
-                <button type="submit" class="layui-btn layui-btn-lg">登陆</button>
-                <button type="reset" class="layui-btn layui-btn-lg layui-btn-danger">重置</button>
-                <a href="registerIndex" class="layui-btn-fluid">注册用户</a>
-            </div>
-        </div>
-    </form>
+    <div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
+	<br>
+	<div class="modal modal-sheet position-static d-block p-4 py-md-5" tabindex="-1" role="dialog" id="modalSignin">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content rounded-4 ">
+				<div class="modal-header p-5 pb-4 border-bottom-0">
+					<h1 class="fw-bold mb-0 fs-2">Sign up for free</h1>
+				</div>
+
+				<div class="modal-body p-5 pt-0">
+					<form action="login" method="post" >
+						<div class="form-floating mb-3">
+							<input type="email" name="email" class="form-control rounded-3" id="floatingInput" placeholder="name@example.com">
+							<label for="floatingInput">Email address</label>
+						</div>
+						<div class="form-floating mb-3">
+							<input type="password" name="password" class="form-control rounded-3" id="floatingPassword" placeholder="Password">
+							<label for="floatingPassword">Password</label>
+						</div>
+						<div>
+							<button class="w-50 mb-2 btn btn-lg rounded-3 btn-primary" type="submit">登录</button>
+							<a href="registerIndex" class="w-auto mb-2 btn btn-lg rounded-3 btn-secondary">注册账户</a>
+						</div>
+						<small class="text-body-secondary">By clicking Sign up, you agree to the terms of use.</small>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

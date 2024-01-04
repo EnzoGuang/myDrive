@@ -7,8 +7,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @Controller
 public class LoginController {
 
@@ -20,9 +18,13 @@ public class LoginController {
 
         User user = userMapper.findUserByEmail(email, password);
         if (user == null) {
-            return "empty";
+            return "emptyUser";
         }
-        modelMap.put("currentUser", user);
-        return "homepage";
+        if(user.getPassword() == password && user.getEmail() == email){
+            modelMap.put("currentUser", user);
+            return "homepage";
+        } else {
+            return "emptyUser";
+        }
     }
 }
