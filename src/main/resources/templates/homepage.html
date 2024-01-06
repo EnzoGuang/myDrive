@@ -8,10 +8,15 @@
 		<!-- 引入layui -->
 		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
 		<!-- 引入bootstrap -->
-		<link th:href="@{bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+
 	</head>
 	<body>
-		这是homepage<br>
+		<div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
+		<div>
+			这是homepage
+			<a href="/index" style="float: right" class="btn btn-primary">退出登录</a><br>
+		</div>
 		当前用户是
 		<table class="layui-table">
 			<thead class="layui-table-header">
@@ -33,5 +38,21 @@
 				</tr>
 			</tbody>
 		</table>
+		<br>
+		<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
+			<label for="file">请选择文件</label>
+			<br>
+			<input type="file" style="width: auto" class="btn btn-success" id="file" name="file">
+			<button type="submit" class="btn btn-danger">上传文件</button>
+		</form>
+		<div th:if="${uploadMessage}">
+			[[${uploadMessage}]]
+		</div>
+		<script th:inline="javascript" th:if="${uploadMessage}">
+			// 文件上传后进行弹窗,判断是否上传成功
+			window.onload = function() {
+				alert([[${uploadMessage}]])
+			}
+		</script>
 	</body>
 </html>
