@@ -1,16 +1,22 @@
 package com.yg.mydrive.service;
 
+import com.yg.mydrive.entity.Files;
+import com.yg.mydrive.entity.User;
+import com.yg.mydrive.mapper.FileMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class FileService {
 
@@ -28,8 +34,10 @@ public class FileService {
      * @param file
      * @return
      */
-    public static ResponseEntity<String> handleUploadFile(MultipartFile file) {
+    public static ResponseEntity<String> handleUploadFile(MultipartFile file, HttpSession session, FileMapper fileMapper) {
         try {
+            // 通过session获得当前用户
+            User user = (User) session.getAttribute("currentUser");
             // 获得文件的hash值
             String hashValue = getHashOfFile(file);
 
@@ -42,7 +50,14 @@ public class FileService {
             Path filePath = Utils.join(getUploadDir(), fileName).toPath();
 
             // 复制文件到目标路径
-            FileCopyUtils.copy(file.getInputStream(), Files.newOutputStream(filePath));
+            FileCopyUtils.copy(file.getInputStream(), java.nio.file.Files.newOutputStream(filePath));
+            Files files = new Files();
+            files.setFileName(originalName);
+            files.setHashValue(hashValue);
+            files.setUserId(user.getUserId());
+            files.setUploadTime(getTime());
+            fileMapper.insertFile(files);
+
 
             return new ResponseEntity<>("文件上传成功" + originalName, HttpStatus.OK);
 
@@ -78,5 +93,16 @@ public class FileService {
         }
         return stringBuilder.toString();
 
+    }
+
+    /**
+     * 返回当前时间,格式与MySql的Datetime相同
+     * @return
+     */
+    private static String getTime() {
+        LocalDateTime time = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String resultTime = time.format(formatter);
+        return resultTime;
     }
 }

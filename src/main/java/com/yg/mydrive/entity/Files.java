@@ -1,13 +1,15 @@
 package com.yg.mydrive.entity;
 
-public class File {
+public class Files {
     private int fileId;
     private String fileName;
-    private String filePath;
+    private String hashValue;
+    private int folderId;
     private int userId;
+    private String filePath;
     private String uploadTime;
 
-    public File() {}
+    public Files() {}
 
     public int getFileId() {
         return fileId;
@@ -25,12 +27,20 @@ public class File {
         this.fileName = fileName;
     }
 
-    public String getFilePath() {
-        return filePath;
+    public String getHashValue() {
+        return hashValue;
     }
 
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
+    public void setHashValue(String hashValue) {
+        this.hashValue = hashValue;
+    }
+
+    public int getFolderId() {
+        return folderId;
+    }
+
+    public void setFolderId(int folderId) {
+        this.folderId = folderId;
     }
 
     public int getUserId() {
@@ -39,6 +49,14 @@ public class File {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     public String getUploadTime() {

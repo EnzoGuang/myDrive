@@ -1,15 +1,12 @@
 package com.yg.mydrive.service;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -98,7 +95,7 @@ class Utils {
             throw new IllegalArgumentException("must be a normal file");
         }
         try {
-            return Files.readAllBytes(file.toPath());
+            return java.nio.file.Files.readAllBytes(file.toPath());
         } catch (IOException excp) {
             throw new IllegalArgumentException(excp.getMessage());
         }
@@ -122,7 +119,7 @@ class Utils {
                     new IllegalArgumentException("cannot overwrite directory");
             }
             BufferedOutputStream str =
-                new BufferedOutputStream(Files.newOutputStream(file.toPath()));
+                new BufferedOutputStream(java.nio.file.Files.newOutputStream(file.toPath()));
             for (Object obj : contents) {
                 if (obj instanceof byte[]) {
                     str.write((byte[]) obj);
@@ -153,7 +150,7 @@ class Utils {
     }
 
 //    /** Write OBJ to FILE. */
-//    static void writeObject(File file, Serializable obj) {
+//    static void writeObject(Files file, Serializable obj) {
 //        writeContents(file, serialize(obj));
 //    }
 
@@ -190,14 +187,14 @@ class Utils {
 
     /* OTHER FILE UTILITIES */
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
+    /** Return the concatentation of FIRST and OTHERS into a Files designator,
      *  analogous to the {)}
      *  method. */
     static File join(String first, String... others) {
         return Paths.get(first, others).toFile();
     }
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
+    /** Return the concatentation of FIRST and OTHERS into a Files designator,
      *  analogous to the {)}
      *  method. */
     static File join(File first, String... others) {

@@ -38,6 +38,9 @@
 				</tr>
 			</tbody>
 		</table>
+		<ul th:each="file:${filesList}" class="list-group">
+			<li th:text="${file.getFileName()}" class="list-group-item"></li>
+		</ul>
 		<br>
 		<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
 			<label for="file">请选择文件</label>
