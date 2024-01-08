@@ -5,10 +5,11 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Mapper
 public interface FileMapper {
     int insertFile(Files file);
 
-    Files findFileByUserIdAndFolderId(@Param("userId") int userId, @Param("folderId") Integer folderId);
+    List<Files> findFileByUserIdAndFolderId(@Param("userId") int userId, @Param("folderId") Integer folderId);
 }

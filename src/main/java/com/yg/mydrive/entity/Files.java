@@ -9,6 +9,19 @@ public class Files {
     private String filePath;
     private String uploadTime;
 
+    @Override
+    public String toString() {
+        return "Files{" +
+                "fileId=" + fileId +
+                ", fileName='" + fileName + '\'' +
+                ", hashValue='" + hashValue + '\'' +
+                ", folderId=" + folderId +
+                ", userId=" + userId +
+                ", filePath='" + filePath + '\'' +
+                ", uploadTime='" + uploadTime + '\'' +
+                '}';
+    }
+
     public Files() {}
 
     public int getFileId() {

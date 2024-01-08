@@ -56,6 +56,7 @@ public class FileService {
             files.setHashValue(hashValue);
             files.setUserId(user.getUserId());
             files.setUploadTime(getTime());
+            files.setFolderId(0);
             fileMapper.insertFile(files);
 
 

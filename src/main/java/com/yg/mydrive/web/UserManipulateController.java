@@ -50,7 +50,7 @@ public class UserManipulateController {
             // 设置当前用户会话
             session.setAttribute("currentUser", user);
             modelMap.put("currentUser", user);
-            return "homepage";
+            return "redirect:/user/homepage";
         }
     }
 
@@ -64,7 +64,7 @@ public class UserManipulateController {
     public String homePage(ModelMap modelMap, HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         modelMap.put("currentUser", user);
-        Files filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), null);
+        List<Files> filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), null);
         modelMap.put("filesList", filesList);
         if (user == null) {
             return "redirect:/index";

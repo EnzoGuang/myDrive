@@ -10,8 +10,15 @@
                folder_id folderId,
                user_id userId,
                file_path filePath,
-               upload_time uploadTime
-        from file where user_id = ${userId} and folder_id = #{folderId};
+               upload_time uploadTime,
+                id fileId
+        from file where user_id = ${userId}
+        <if test="folderId == null">
+            and folder_id is null
+        </if>
+        <if test="folderId != null">
+            and folder_id = ${folderId}
+        </if>
     </select>
 
 </mapper>
