@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.List;
 
+import static com.yg.mydrive.service.FileService.handleDeleteFileByName;
 import static com.yg.mydrive.service.FileService.handleDownloadFile;
 
 
@@ -102,6 +104,18 @@ public class UserManipulateController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException {
         User user = (User) session.getAttribute("currentUser");
         return handleDownloadFile(fileName, user, fileMapper);
+    }
+
+    @GetMapping("deleteFile/{fileName:.+}")
+    public String deleteFile(@PathVariable String fileName, HttpSession session, ModelMap modelMap) throws IOException {
+        User user = (User) session.getAttribute("currentUser");
+        int result = handleDeleteFileByName(fileName, user, fileMapper);
+        if (result == 1) {
+            modelMap.put("deleteMessage", fileName + " delete success!");
+        } else {
+            modelMap.put("deleteMessage", fileName + " delete fail");
+        }
+        return "redirect:/user/homepage";
     }
 
 }

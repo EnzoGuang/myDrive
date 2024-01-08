@@ -22,6 +22,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FileService {
 
@@ -118,10 +120,11 @@ public class FileService {
     }
 
     public static ResponseEntity<Resource> handleDownloadFile(String fileName, User user, FileMapper fileMapper) throws MalformedURLException {
+        Map<String, String> map = getFileHashAndStorageName(fileName, user, fileMapper);
         // 获得文件的hash值
-        String fileHash = fileMapper.getHashOfFileByUserIdAndFileName(user.getUserId(), fileName);
+        String fileHash = map.get("fileHash");
         // 获得文件存储在文件系统的实际存储名字
-        String fileStorageName = concatHashPrefixAndFileName(fileHash, fileName);
+        String fileStorageName = map.get("fileStorageName");
         // 获得文件的实际存储路径
         Path fileStoragePath = getUploadDir().toPath().resolve(fileStorageName);
 
@@ -134,6 +137,20 @@ public class FileService {
         return ResponseEntity.ok().headers(headers).body(resource);
     }
 
+    /**
+     * helper method 返回一个map,里面包含文件hash值和文件实际存储名字
+     * 只存放两个键值对
+     *  1.key:fileHash
+     *  2.key:fileStorageName
+     */
+    private static Map<String, String> getFileHashAndStorageName(String fileName, User user, FileMapper fileMapper) {
+        HashMap<String, String> map = new HashMap<>();
+        String fileHash = fileMapper.getHashOfFileByUserIdAndFileName(user.getUserId(), fileName);
+        String fileStorageName = concatHashPrefixAndFileName(fileHash, fileName);
+        map.put("fileHash", fileHash);
+        map.put("fileStorageName", concatHashPrefixAndFileName(fileHash, fileName));
+        return map;
+    }
 
     /**
      * 实际文件名存储在文件系统是通过 '前八位hash值' + '_' + '文件名' 组成
@@ -149,5 +166,15 @@ public class FileService {
             System.out.println(e.getMessage());
             return null;
         }
+    }
+
+    public static int handleDeleteFileByName(String fileName, User user, FileMapper fileMapper) throws IOException {
+        Map<String, String> map = getFileHashAndStorageName(fileName, user, fileMapper);
+        Path fileStoragePath = getUploadDir().toPath().resolve(map.get("fileStorageName"));
+        // 删除文件系统下的文件
+        java.nio.file.Files.delete(fileStoragePath);
+
+        // 执行delete语句, 返回执行结果, 值为1,删除成功, 值为0,删除失败
+        return fileMapper.deleteFileByFileName(user.getUserId(), fileName);
     }
 }

@@ -41,13 +41,13 @@
 		</table>
 
 		<!-- 显示当前用户的所有文件 -->
-		<div class="rouned-3">
-			<p class="p-lg-2 ">文件</p>
+		<div class="rouned-2">
+			<p class="p-2 ">文件</p>
 			<ul th:each="file:${filesList}" class="list-group rounded-3">
 				<li class="list-group-item">
-					<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-2">
+					<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
 					[[${file.getFileName()}]]
-					<a th:href="@{/user/deleteFile}" class="btn btn-sm btn-danger float-end m-1">删除</a>
+					<a th:href="@{/user/deleteFile/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-danger float-end m-1">删除</a>
 					<a th:href="@{/user/download/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-primary float-end m-1">下载</a>
 				</li>
 			</ul>
@@ -64,10 +64,17 @@
 		<div th:if="${uploadMessage}">
 			[[${uploadMessage}]]
 		</div>
-		<script th:inline="javascript" th:if="${uploadMessage}">
+		<script th:inline="javascript" >
 			// 文件上传后进行弹窗,判断是否上传成功
-			window.onload = function() {
-				alert([[${uploadMessage}]])
+			if ([[${uploadMessage}]]) {
+				window.onload = function() {
+					alert("[[${uploadMessage}]]");
+				}
+			}
+			if ([[${deleteMessage}]]) {
+				window.onload = function () {
+					alert("[[${deleteMessage}]]");
+				}
 			}
 		</script>
 	</body>

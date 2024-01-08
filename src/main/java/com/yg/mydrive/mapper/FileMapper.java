@@ -17,4 +17,6 @@ public interface FileMapper {
     List<Files> findFileByUserIdAndFolderId(@Param("userId") int userId, @Param("folderId") Integer folderId);
 
     String getHashOfFileByUserIdAndFileName(@Param("userId") Integer userId, @Param("fileName") String fileName);
+
+    int deleteFileByFileName(@Param("userId") Integer userId, @Param("fileName") String fileName);
 }

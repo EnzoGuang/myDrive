@@ -4,6 +4,9 @@
     <insert id="insertFile">
         insert into file values (null, #{fileName}, #{hashValue}, null, #{userId}, null, #{uploadTime});
     </insert>
+    <delete id="deleteFileByFileName" >
+        delete from file where file_name = #{fileName} and user_id = #{userId}
+    </delete>
     <select id="findFileByUserIdAndFolderId" resultType="com.yg.mydrive.entity.Files">
         select file_name fileName,
                hash_value hashValue,
