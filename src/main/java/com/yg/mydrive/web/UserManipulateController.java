@@ -6,16 +6,18 @@ import com.yg.mydrive.mapper.FileMapper;
 import com.yg.mydrive.mapper.UserMapper;
 import com.yg.mydrive.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
+import java.net.MalformedURLException;
 import java.util.List;
+
+import static com.yg.mydrive.service.FileService.handleDownloadFile;
 
 
 @Controller
@@ -95,4 +97,11 @@ public class UserManipulateController {
         redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
         return "redirect:/user/homepage";
     }
+
+    @GetMapping("download/{fileName:.+}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException {
+        User user = (User) session.getAttribute("currentUser");
+        return handleDownloadFile(fileName, user, fileMapper);
+    }
+
 }

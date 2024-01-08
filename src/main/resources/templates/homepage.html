@@ -12,6 +12,7 @@
 
 	</head>
 	<body>
+		<!-- 引入header -->
 		<div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
 		<div>
 			这是homepage
@@ -38,18 +39,22 @@
 				</tr>
 			</tbody>
 		</table>
-		<!-- 显示当前用户的所有文件 -->
 
+		<!-- 显示当前用户的所有文件 -->
 		<div class="rouned-3">
 			<p class="p-lg-2 ">文件</p>
 			<ul th:each="file:${filesList}" class="list-group rounded-3">
 				<li class="list-group-item">
 					<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-2">
 					[[${file.getFileName()}]]
+					<a th:href="@{/user/deleteFile}" class="btn btn-sm btn-danger float-end m-1">删除</a>
+					<a th:href="@{/user/download/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-primary float-end m-1">下载</a>
 				</li>
 			</ul>
 			<br>
 		</div>
+
+		<!-- 进行文件上传 -->
 		<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
 			<label for="file">请选择文件</label>
 			<br>

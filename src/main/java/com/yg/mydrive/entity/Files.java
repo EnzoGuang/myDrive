@@ -24,6 +24,10 @@ public class Files {
 
     public Files() {}
 
+    public Files(String hashValue) {
+        this.hashValue = hashValue;
+    }
+
     public int getFileId() {
         return fileId;
     }

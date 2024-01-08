@@ -21,4 +21,9 @@
         </if>
     </select>
 
+    <!-- 用于用户下载文件时使用,通过用户id和文件名找到该文件的hash值,拼接hash值和文件名找到实际上存储在文件系统的文件名-->
+    <select id="getHashOfFileByUserIdAndFileName" resultType="java.lang.String">
+        select hash_value hashValue from file where user_id = #{userId} and file_name = #{fileName}
+    </select>
+
 </mapper>
