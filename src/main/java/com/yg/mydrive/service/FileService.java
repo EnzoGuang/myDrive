@@ -1,7 +1,10 @@
 package com.yg.mydrive.service;
 
+import com.yg.mydrive.entity.Chunk;
+import com.yg.mydrive.entity.ChunkFileStatus;
 import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.User;
+import com.yg.mydrive.mapper.ChunkMapper;
 import com.yg.mydrive.mapper.FileMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -16,7 +19,6 @@ import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,10 +26,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FileService {
 
     private static final File UPLOAD_DIR = Utils.join(System.getProperty("user.dir"), "uploads");
+    // 分片上传的临时文件夹
+    private static final File TEMP_DIR = Utils.join(System.getProperty("user.dir"), "temp");
+    private static Map<String, ChunkFileStatus> statusMap = new ConcurrentHashMap<>();
 
     /**
      * 获得上传文件夹的路径, 若该路径不存在,则进行创建
@@ -37,6 +43,13 @@ public class FileService {
             UPLOAD_DIR.mkdir();
         }
         return UPLOAD_DIR;
+    }
+
+    private static File getTempDir() {
+        if (!TEMP_DIR.exists()) {
+            TEMP_DIR.mkdir();
+        }
+        return TEMP_DIR;
     }
 
     /**
@@ -67,7 +80,7 @@ public class FileService {
             FileCopyUtils.copy(file.getInputStream(), java.nio.file.Files.newOutputStream(filePath));
             Files files = new Files();
             files.setFileName(originalName);
-            files.setHashValue(hashValue);
+            files.setFileHash(hashValue);
             files.setUserId(user.getUserId());
             files.setUploadTime(getTime());
             files.setFolderId(0);
@@ -81,6 +94,68 @@ public class FileService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 处理分片文件上传
+     * @param chunk
+     * @param index
+     * @param clientChunkHash
+     * @param totalChunks
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public static ResponseEntity<String> handleUploadChunkFile(int userId,
+                                                               MultipartFile chunk,
+                                                               String fileName,
+                                                               int index,
+                                                               String fileHash,
+                                                               String clientChunkHash,
+                                                               int totalChunks,
+                                                               ChunkMapper chunkMapper,
+                                                               FileMapper fileMapper) throws NoSuchAlgorithmException, IOException {
+        try {
+            // 判断文件在传输过程中是否被篡改
+            String chunkHash = getHashOfFile(chunk);
+            if (!chunkHash.equals(clientChunkHash)) {
+                return ResponseEntity.badRequest().body("Chunk hash mismatch");
+            }
+            ChunkFileStatus chunkFileStatus = statusMap.computeIfAbsent(fileHash, k -> new ChunkFileStatus(fileHash, totalChunks));
+
+            saveChunk(chunk, fileHash, index, chunkHash, chunkMapper);
+            chunkFileStatus.markChunkAsUploaded(index);
+
+            if (chunkFileStatus.isUploadComplete()) {
+                fileMapper.insertFile(new Files(fileName, fileHash, userId, getTime()));
+                statusMap.remove(fileHash);
+                return ResponseEntity.ok().body("File uploaded successful");
+            }
+            return ResponseEntity.ok().body("Chunk " + index + " uploaded successful");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to upload chunk " + index + ": " + e.getMessage());
+        }
+
+
+    }
+
+    /**
+     * 保存分片
+     * @param chunk
+     * @param fileHash
+     * @param index
+     * @param chunkHash
+     * @param chunkMapper
+     * @throws IOException
+     */
+    private static void saveChunk(MultipartFile chunk, String fileHash, int index, String chunkHash, ChunkMapper chunkMapper) throws IOException {
+        File chunkDir = Utils.join(getTempDir(), fileHash);
+        if (!chunkDir.exists()) {
+            chunkDir.mkdirs();
+        }
+        File chunkFile = new File(chunkDir, "chunk" + index);
+        chunk.transferTo(chunkFile);
+        chunkMapper.insertChunk(new Chunk(fileHash, index, chunk.getSize(), chunkHash, getTime()));
     }
 
     /**
@@ -119,6 +194,8 @@ public class FileService {
         return resultTime;
     }
 
+
+    // TODO 分片上传后存储路径该变，函数逻辑改变
     public static ResponseEntity<Resource> handleDownloadFile(String fileName, User user, FileMapper fileMapper) throws MalformedURLException {
         Map<String, String> map = getFileHashAndStorageName(fileName, user, fileMapper);
         // 获得文件的hash值

@@ -2,6 +2,7 @@ package com.yg.mydrive.web;
 
 import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.User;
+import com.yg.mydrive.mapper.ChunkMapper;
 import com.yg.mydrive.mapper.FileMapper;
 import com.yg.mydrive.mapper.UserMapper;
 import com.yg.mydrive.service.FileService;
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static com.yg.mydrive.service.FileService.handleDeleteFileByName;
@@ -31,6 +33,9 @@ public class UserManipulateController {
 
     @Autowired
     FileMapper fileMapper;
+
+    @Autowired
+    ChunkMapper chunkMapper;
 
     /**
      * 进行用户登录时,通过邮箱和密码进行鉴别
@@ -95,6 +100,26 @@ public class UserManipulateController {
             return "redirect:/index";
         }
         ResponseEntity responseEntity = FileService.handleUploadFile(file, session, fileMapper);
+        modelMap.put("uploadMessage", responseEntity.getBody());
+        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
+        return "redirect:/user/homepage";
+    }
+
+    @PostMapping("uploadChunkFile")
+    public String uploadChunkFile(@RequestParam("file") MultipartFile chunk,
+                                  @RequestParam("fileName") String fileName,
+                                  @RequestParam("index") int index,
+                                  @RequestParam("fileHash") String fileHash,
+                                  @RequestParam("chunkHash") String clientChunkHash,
+                                  @RequestParam("totalChunks") int totalChunks,
+                                  ModelMap modelMap,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) throws NoSuchAlgorithmException, IOException {
+        User user = (User) session.getAttribute("currentUser");
+        if (user == null) {
+            return "redirect:/index";
+        }
+        ResponseEntity responseEntity = FileService.handleUploadChunkFile(user.getUserId(), chunk, fileName, index, fileHash, clientChunkHash, totalChunks, chunkMapper, fileMapper);
         modelMap.put("uploadMessage", responseEntity.getBody());
         redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
         return "redirect:/user/homepage";

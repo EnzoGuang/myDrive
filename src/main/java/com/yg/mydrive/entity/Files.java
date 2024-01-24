@@ -2,11 +2,18 @@ package com.yg.mydrive.entity;
 
 public class Files {
     private int fileId;
+
+    public Files(String fileName, String fileHash, int userId, String uploadTime) {
+        this.fileName = fileName;
+        this.fileHash = fileHash;
+        this.userId = userId;
+        this.uploadTime = uploadTime;
+    }
+
     private String fileName;
-    private String hashValue;
+    private String fileHash;
     private int folderId;
     private int userId;
-    private String filePath;
     private String uploadTime;
 
     @Override
@@ -14,18 +21,17 @@ public class Files {
         return "Files{" +
                 "fileId=" + fileId +
                 ", fileName='" + fileName + '\'' +
-                ", hashValue='" + hashValue + '\'' +
+                ", hashValue='" + fileHash + '\'' +
                 ", folderId=" + folderId +
                 ", userId=" + userId +
-                ", filePath='" + filePath + '\'' +
                 ", uploadTime='" + uploadTime + '\'' +
                 '}';
     }
 
     public Files() {}
 
-    public Files(String hashValue) {
-        this.hashValue = hashValue;
+    public Files(String fileHash) {
+        this.fileHash = fileHash;
     }
 
     public int getFileId() {
@@ -44,12 +50,12 @@ public class Files {
         this.fileName = fileName;
     }
 
-    public String getHashValue() {
-        return hashValue;
+    public String getFileHash() {
+        return fileHash;
     }
 
-    public void setHashValue(String hashValue) {
-        this.hashValue = hashValue;
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
     }
 
     public int getFolderId() {
@@ -68,13 +74,6 @@ public class Files {
         this.userId = userId;
     }
 
-    public String getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(String filePath) {
-        this.filePath = filePath;
-    }
 
     public String getUploadTime() {
         return uploadTime;

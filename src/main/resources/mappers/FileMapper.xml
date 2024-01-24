@@ -2,19 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FileMapper">
     <insert id="insertFile">
-        insert into file values (null, #{fileName}, #{hashValue}, null, #{userId}, null, #{uploadTime});
+        insert into file values (null, #{fileName}, #{fileHash}, null, #{userId}, #{uploadTime});
     </insert>
     <delete id="deleteFileByFileName" >
         delete from file where file_name = #{fileName} and user_id = #{userId}
     </delete>
     <select id="findFileByUserIdAndFolderId" resultType="com.yg.mydrive.entity.Files">
         select file_name fileName,
-               hash_value hashValue,
+               file_hash fileHash,
                folder_id folderId,
                user_id userId,
-               file_path filePath,
                upload_time uploadTime,
-                id fileId
+               id fileId
         from file where user_id = ${userId}
         <if test="folderId == null">
             and folder_id is null
@@ -26,7 +25,7 @@
 
     <!-- 用于用户下载文件时使用,通过用户id和文件名找到该文件的hash值,拼接hash值和文件名找到实际上存储在文件系统的文件名-->
     <select id="getHashOfFileByUserIdAndFileName" resultType="java.lang.String">
-        select hash_value hashValue from file where user_id = #{userId} and file_name = #{fileName}
+        select file_hash fileHash from file where user_id = #{userId} and file_name = #{fileName}
     </select>
 
 </mapper>

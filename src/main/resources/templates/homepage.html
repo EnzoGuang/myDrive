@@ -55,27 +55,105 @@
 		</div>
 
 		<!-- 进行文件上传 -->
-		<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
-			<label for="file">请选择文件</label>
-			<br>
-			<input type="file" style="width: auto" class="btn btn-success" id="file" name="file">
-			<button type="submit" class="btn btn-danger">上传文件</button>
-		</form>
+		<div>
+			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
+				<label for="fileInput">请选择文件</label>
+				<br>
+				<input type="file" style="width: auto" class="btn btn-success" id="fileInput" name="file">
+				<!--			<button type="submit" class="btn btn-danger">上传文件</button>-->
+			</form>
+			<button id="uploadButton" class="btn btn-danger">上传文件</button>
+		</div>
+		<!-- 进度条 -->
+		<div id="progressContainer" style="width: 100%; background-color: #ddd; margin-top: 20px;">
+			<div id="progressBar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
+		</div>
+
+		<!-- 进度信息 -->
+		<div id="progressText"></div>
+		<script>
+			let selectedFile; // 用于存储选中的文件
+
+			// 监听文件选择变化
+			document.getElementById('fileInput').addEventListener('change', (event) => {
+				selectedFile = event.target.files[0]; // 保存选中的文件
+			});
+
+			document.getElementById('uploadButton').addEventListener('click', async () => {
+				if (selectedFile) {
+					const fileHash = await calculateHash(selectedFile);
+					const chunkSize = 1 * 1024 * 1024;
+					const totalChunks = Math.ceil(selectedFile.size / chunkSize);
+
+					for (let i = 0; i < totalChunks; i++) {
+						const chunk = selectedFile.slice(i * chunkSize, (i + 1) * chunkSize);
+						const chunkHash = await calculateHash(chunk)
+						console.log(`Chunk ${i}: Hash: ${chunkHash}`);
+
+						const formData = new FormData();
+						formData.append('fileName', selectedFile.name);
+						formData.append('file', chunk);
+						formData.append('index', i);
+						formData.append('fileHash', fileHash);
+						formData.append('chunkHash', chunkHash);
+						formData.append("totalChunks", totalChunks);
+
+						try {
+							const response = await fetch('http://localhost:8080/user/uploadChunkFile', {
+								method: 'POST',
+								body: formData
+							});
+							if (!response.ok) {
+								throw new Error('Upload chunk' + i + ' fail');
+							}
+						} catch (error) {
+							console.error(error);
+							alert(`上传失败: ${error.message}`);
+							break;
+						}
+					}
+				} else {
+					alert("请先选择一个文件! ");
+				}
+			})
+
+			async function calculateHash(file) {
+				// 读取文件内容
+				const arrayBuffer = await file.arrayBuffer();
+
+				// 计算哈希值
+				const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+
+				// 将ArrayBuffer转换为十六进制字符串
+				const hashArray = Array.from(new Uint8Array(hashBuffer));
+				const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+				return hashHex;
+			}
+
+			// 更新进度条
+			function updateProgress(currentChunk, totalChunks) {
+				const progressPercentage = (currentChunk / totalChunks) * 100;
+				document.getElementById('progressBar').style.width = `${progressPercentage}%`;
+				document.getElementById('progressText').innerText = `上传进度: ${progressPercentage.toFixed(2)}%`;
+			}
+		</script>
+
 		<div th:if="${uploadMessage}">
 			[[${uploadMessage}]]
 		</div>
-		<script th:inline="javascript" >
-			// 文件上传后进行弹窗,判断是否上传成功
-			if ([[${uploadMessage}]]) {
-				window.onload = function() {
-					alert("[[${uploadMessage}]]");
-				}
-			}
-			if ([[${deleteMessage}]]) {
-				window.onload = function () {
-					alert("[[${deleteMessage}]]");
-				}
-			}
-		</script>
+<!--		<script th:inline="javascript" >-->
+<!--			// 文件上传后进行弹窗,判断是否上传成功-->
+<!--			if ([[${uploadMessage}]]) {-->
+<!--				window.onload = function() {-->
+<!--					alert("[[${uploadMessage}]]");-->
+<!--				}-->
+<!--			}-->
+<!--			if ([[${deleteMessage}]]) {-->
+<!--				window.onload = function () {-->
+<!--					alert("[[${deleteMessage}]]");-->
+<!--				}-->
+<!--			}-->
+<!--		</script>-->
 	</body>
 </html>
