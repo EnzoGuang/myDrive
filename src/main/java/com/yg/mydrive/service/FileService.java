@@ -25,14 +25,13 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FileService {
 
     private static final File UPLOAD_DIR = Utils.join(System.getProperty("user.dir"), "uploads");
-    // 分片上传的临时文件夹
-    private static final File TEMP_DIR = Utils.join(System.getProperty("user.dir"), "temp");
     private static Map<String, ChunkFileStatus> statusMap = new ConcurrentHashMap<>();
 
     /**
@@ -45,14 +44,8 @@ public class FileService {
         return UPLOAD_DIR;
     }
 
-    private static File getTempDir() {
-        if (!TEMP_DIR.exists()) {
-            TEMP_DIR.mkdir();
-        }
-        return TEMP_DIR;
-    }
-
     /**
+     * @deprecated 使用 {@link #handleUploadChunkFile}替代,新方法使用分片上传
      * 处理文件上传,通过session获取当前用户
      * @param file
      * @param session
@@ -123,24 +116,33 @@ public class FileService {
             }
             ChunkFileStatus chunkFileStatus = statusMap.computeIfAbsent(fileHash, k -> new ChunkFileStatus(fileHash, totalChunks));
 
-            saveChunk(chunk, fileHash, index, chunkHash, chunkMapper);
+            // 保存分片到文件系统中
+            saveChunkToUploadDir(chunk, fileHash, index, chunkHash, chunkMapper);
+
+            // 标记该分片上传成功
             chunkFileStatus.markChunkAsUploaded(index);
 
+            // 判断文件的所有分片是否都上传完毕
             if (chunkFileStatus.isUploadComplete()) {
                 fileMapper.insertFile(new Files(fileName, fileHash, userId, getTime()));
+
+                // 通过文件的hash值获得在表中的id
+                int fileId = fileMapper.findIdByFileHash(fileHash);
+
+                // 通过id更新chunk表,更新所有属于同一个文件的分片的id值
+                chunkMapper.updateFileIdByFileHash(fileId, fileHash);
                 statusMap.remove(fileHash);
                 return ResponseEntity.ok().body("File uploaded successful");
             }
+
             return ResponseEntity.ok().body("Chunk " + index + " uploaded successful");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to upload chunk " + index + ": " + e.getMessage());
         }
-
-
     }
 
     /**
-     * 保存分片
+     * 存储分片到文件系统中
      * @param chunk
      * @param fileHash
      * @param index
@@ -148,14 +150,38 @@ public class FileService {
      * @param chunkMapper
      * @throws IOException
      */
-    private static void saveChunk(MultipartFile chunk, String fileHash, int index, String chunkHash, ChunkMapper chunkMapper) throws IOException {
-        File chunkDir = Utils.join(getTempDir(), fileHash);
+    private static void saveChunkToUploadDir(MultipartFile chunk, String fileHash, int index, String chunkHash, ChunkMapper chunkMapper) throws IOException {
+        // 通过分片的hash值获得存储路径
+        File chunkStoragePath = getDirPathOfChunkToSave(chunkHash);
+
+        // 将分片进行存储
+        chunk.transferTo(chunkStoragePath);
+
+        // 将该分片记录插入数据库
+        chunkMapper.insertChunk(new Chunk(fileHash, index, chunk.getSize(), chunkHash, getTime()));
+    }
+
+    /**
+     * 获得分片的存储路径,用于上传分片,采用和git相同的存储策略,hash值的前两位作为存储目录,剩余位作为分片名
+     * @param chunkHash
+     * @return
+     */
+    private static File getDirPathOfChunkToSave(String chunkHash) {
+        File chunkDir =  Utils.join(getUploadDir(), chunkHash.substring(0, 2));
         if (!chunkDir.exists()) {
             chunkDir.mkdirs();
         }
-        File chunkFile = new File(chunkDir, "chunk" + index);
-        chunk.transferTo(chunkFile);
-        chunkMapper.insertChunk(new Chunk(fileHash, index, chunk.getSize(), chunkHash, getTime()));
+        return Utils.join(chunkDir, chunkHash.substring(2));
+    }
+
+    /**
+     * 获得分片的存储路径,用于删除分片
+     * @param chunkHash
+     * @return
+     */
+    private static File getDirPathOfChunkToDelete(String chunkHash) {
+        File chunkDir = Utils.join(getUploadDir(), chunkHash.substring(0, 2));
+        return Utils.join(chunkDir, chunkHash.substring(2));
     }
 
     /**
@@ -214,7 +240,7 @@ public class FileService {
         return ResponseEntity.ok().headers(headers).body(resource);
     }
 
-    /**
+    /** TODO 需要更改
      * helper method 返回一个map,里面包含文件hash值和文件实际存储名字
      * 只存放两个键值对
      *  1.key:fileHash
@@ -229,7 +255,7 @@ public class FileService {
         return map;
     }
 
-    /**
+    /** TODO 需要更改
      * 实际文件名存储在文件系统是通过 '前八位hash值' + '_' + '文件名' 组成
      */
     public static String concatHashPrefixAndFileName(String hash, String filename) {
@@ -245,13 +271,62 @@ public class FileService {
         }
     }
 
-    public static int handleDeleteFileByName(String fileName, User user, FileMapper fileMapper) throws IOException {
-        Map<String, String> map = getFileHashAndStorageName(fileName, user, fileMapper);
-        Path fileStoragePath = getUploadDir().toPath().resolve(map.get("fileStorageName"));
-        // 删除文件系统下的文件
-        java.nio.file.Files.delete(fileStoragePath);
+    /**
+     * 通过文件名和用户id获得该文件的hash值
+     * @param fileName
+     * @param user
+     * @param fileMapper
+     * @return
+     */
+    private static String getFileHash(String fileName, User user, FileMapper fileMapper) {
+        return fileMapper.getFileHashByFileNameAndUserId(fileName, user.getUserId());
+    }
 
-        // 执行delete语句, 返回执行结果, 值为1,删除成功, 值为0,删除失败
-        return fileMapper.deleteFileByFileName(user.getUserId(), fileName);
+    /**
+     * 通过文件名和用户id获得该文件的hash值
+     * @param fileName
+     * @param user
+     * @param fileMapper
+     * @return
+     */
+    private static Integer getFileId(String fileName, User user, FileMapper fileMapper) {
+        return fileMapper.getFileIdByFileNameAndUserId(fileName, user.getUserId());
+    }
+
+    /**
+     * 通过文件名删除文件,包含删除文件记录和分片记录,并在文件系统中删除文件
+      * @param fileName
+     * @param user
+     * @param fileMapper
+     * @param chunkMapper
+     * @return
+     */
+    public static int handleDeleteFileByName(String fileName, User user, FileMapper fileMapper, ChunkMapper chunkMapper) {
+        String fileHash = getFileHash(fileName, user, fileMapper);
+        Integer fileId = getFileId(fileName, user, fileMapper);
+
+        // 通过fileId和fileHash获得该文件的所有分片chunks
+        List<Chunk> chunks = chunkMapper.getAllChunksByFileIdAndFileHash(fileId);
+
+        // 用于记录当前被已经被删除chunk个数
+        int deletedChunks = 0;
+
+        for (Chunk chunk: chunks) {
+            File chunkPathToDelete = getDirPathOfChunkToDelete(chunk.getChunkHash());
+            if (chunkPathToDelete.exists()) {
+                // 在文件系统中删除该分片
+                chunkPathToDelete.delete();
+
+                // 删除分片表中的记录
+                int result = chunkMapper.deleteChunkById(chunk.getChunkId());
+                if (result == 1) {
+                    deletedChunks++;
+                }
+            }
+        }
+        if (deletedChunks == chunks.size()) {
+            return fileMapper.deleteFileByFileNameAndUserId(fileName, user.getUserId());
+        }
+        return 0;
     }
 }

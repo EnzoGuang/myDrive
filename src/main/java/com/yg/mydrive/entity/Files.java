@@ -2,6 +2,11 @@ package com.yg.mydrive.entity;
 
 public class Files {
     private int fileId;
+    private String fileName;
+    private String fileHash;
+    private int folderId;
+    private int userId;
+    private String uploadTime;
 
     public Files(String fileName, String fileHash, int userId, String uploadTime) {
         this.fileName = fileName;
@@ -9,12 +14,6 @@ public class Files {
         this.userId = userId;
         this.uploadTime = uploadTime;
     }
-
-    private String fileName;
-    private String fileHash;
-    private int folderId;
-    private int userId;
-    private String uploadTime;
 
     @Override
     public String toString() {

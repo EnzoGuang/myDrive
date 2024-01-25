@@ -41,10 +41,10 @@
 		</table>
 
 		<!-- 显示当前用户的所有文件 -->
-		<div class="rouned-2">
-			<p class="p-2 ">文件</p>
-			<ul th:each="file:${filesList}" class="list-group rounded-3">
-				<li class="list-group-item">
+		<div class="rouned-1">
+			<p class="p-1 ">文件</p>
+			<ul th:each="file:${filesList}" class="list-group rounded-1">
+				<li class="list-group-item rounded-1">
 					<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
 					[[${file.getFileName()}]]
 					<a th:href="@{/user/deleteFile/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-danger float-end m-1">删除</a>
@@ -55,22 +55,24 @@
 		</div>
 
 		<!-- 进行文件上传 -->
-		<div>
-			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data">
-				<label for="fileInput">请选择文件</label>
-				<br>
-				<input type="file" style="width: auto" class="btn btn-success" id="fileInput" name="file">
-				<!--			<button type="submit" class="btn btn-danger">上传文件</button>-->
+		<div class="container my-4">
+			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data" class="upload-form">
+				<div class="mb-3">
+					<label for="fileInput" class="form-label" >请选择文件</label>
+					<input type="file" class="form-control bg-secondary-subtle" id="fileInput" name="file">
+				</div>
+				<!-- 进度条 -->
+				<div class="progress my-3" style="height: 20px;">
+					<div id="progressBar" class="progress-bar bg-success-subtle" role="progressbar" style="width: 0%;"></div>
+				</div>
+				<!-- 进度信息 -->
+				<div id="progressText" class="progress-text mb-3"></div>
 			</form>
 			<button id="uploadButton" class="btn btn-danger">上传文件</button>
-		</div>
-		<!-- 进度条 -->
-		<div id="progressContainer" style="width: 100%; background-color: #ddd; margin-top: 20px;">
-			<div id="progressBar" style="width: 0%; height: 20px; background-color: #4CAF50;"></div>
+			<!-- hash值计算状态 -->
+			<div id="hashStatus" class="hash-status mt-3"></div>
 		</div>
 
-		<!-- 进度信息 -->
-		<div id="progressText"></div>
 		<script>
 			let selectedFile; // 用于存储选中的文件
 
@@ -81,8 +83,12 @@
 
 			document.getElementById('uploadButton').addEventListener('click', async () => {
 				if (selectedFile) {
+					showHashCalculationStatus('正在计算文件哈希,请稍候...');
 					const fileHash = await calculateHash(selectedFile);
-					const chunkSize = 1 * 1024 * 1024;
+					showHashCalculationStatus(selectedFile.name + ' 文件哈希计算完成:' + fileHash);
+
+					// 设置分片大小位10MB
+					const chunkSize = 10 * 1024 * 1024;
 					const totalChunks = Math.ceil(selectedFile.size / chunkSize);
 
 					for (let i = 0; i < totalChunks; i++) {
@@ -106,6 +112,8 @@
 							if (!response.ok) {
 								throw new Error('Upload chunk' + i + ' fail');
 							}
+							//更新进度条
+							updateProgress(i + 1, totalChunks);
 						} catch (error) {
 							console.error(error);
 							alert(`上传失败: ${error.message}`);
@@ -137,23 +145,17 @@
 				document.getElementById('progressBar').style.width = `${progressPercentage}%`;
 				document.getElementById('progressText').innerText = `上传进度: ${progressPercentage.toFixed(2)}%`;
 			}
+
+			function showHashCalculationStatus(message) {
+				const hashStatusElement = document.getElementById('hashStatus');
+				if (hashStatusElement) {
+					hashStatusElement.innerText = message;
+				}
+			}
 		</script>
 
 		<div th:if="${uploadMessage}">
 			[[${uploadMessage}]]
 		</div>
-<!--		<script th:inline="javascript" >-->
-<!--			// 文件上传后进行弹窗,判断是否上传成功-->
-<!--			if ([[${uploadMessage}]]) {-->
-<!--				window.onload = function() {-->
-<!--					alert("[[${uploadMessage}]]");-->
-<!--				}-->
-<!--			}-->
-<!--			if ([[${deleteMessage}]]) {-->
-<!--				window.onload = function () {-->
-<!--					alert("[[${deleteMessage}]]");-->
-<!--				}-->
-<!--			}-->
-<!--		</script>-->
 	</body>
 </html>

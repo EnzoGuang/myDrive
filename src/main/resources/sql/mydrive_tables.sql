@@ -21,11 +21,13 @@ create table file(
 # 创建文件分片表
 create table file_chunk(
     id INT PRIMARY KEY AUTO_INCREMENT,
+    file_id INT COMMENT '外键关联file表的id值',
     file_hash VARCHAR(255) COMMENT '外键关联file表',
     chunk_index INT NOT NULL COMMENT '文件分片的序号',
-    chunk_size BIGINT COMMENT '分片的大小',
     chunk_hash varchar(255) COMMENT '序号为index的分片的hash值,hash值同时作为存储路径',
-    upload_time DATETIME
+    chunk_size BIGINT COMMENT '分片的大小',
+    upload_time DATETIME,
+    FOREIGN KEY (file_id) REFERENCES file(id)
 );
 
 # 创建文件夹表

@@ -4,9 +4,11 @@
     <insert id="insertFile">
         insert into file values (null, #{fileName}, #{fileHash}, null, #{userId}, #{uploadTime});
     </insert>
+
     <delete id="deleteFileByFileName" >
         delete from file where file_name = #{fileName} and user_id = #{userId}
     </delete>
+
     <select id="findFileByUserIdAndFolderId" resultType="com.yg.mydrive.entity.Files">
         select file_name fileName,
                file_hash fileHash,
@@ -27,5 +29,26 @@
     <select id="getHashOfFileByUserIdAndFileName" resultType="java.lang.String">
         select file_hash fileHash from file where user_id = #{userId} and file_name = #{fileName}
     </select>
+
+    <!-- 通过文件hash查找文件的id -->
+    <select id="findIdByFileHash" resultType="java.lang.Integer">
+        select id fileId from file where file_hash = #{fileHash} limit 1;
+    </select>
+
+    <!-- 通过用户id和文件名查找文件的hash值 -->
+    <select id="getFileHashByFileNameAndUserId" resultType="java.lang.String">
+        select file_hash fileHash from file where file_name = #{fileName} and user_id = #{userId};
+    </select>
+
+    <!-- 通过用户id和文件名获得文件的id值 -->
+    <select id="getFileIdByFileNameAndUserId" resultType="java.lang.Integer">
+        select id fileId from file where file_name = #{fileName} and user_id = #{userId};
+    </select>
+
+    <!-- 通过文件名和用户id删除该文件记录 -->
+    <delete id="deleteFileByFileNameAndUserId">
+        delete from file where file_name = #{fileName} and user_id = #{userId};
+    </delete>
+
 
 </mapper>
