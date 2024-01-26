@@ -2,27 +2,30 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.ChunkMapper">
     <insert id="insertChunk">
-        insert into file_chunk values (null, null, #{fileHash}, #{chunkIndex}, #{chunkHash}, #{chunkSize}, #{uploadTime});
+        insert into file_chunk values (null, #{fileHash}, #{chunkIndex}, #{chunkHash}, #{chunkSize}, #{uploadTime});
     </insert>
-    <update id="updateFileIdByFileHash">
-        update file_chunk set file_id = #{fileId} where file_hash = #{fileHash};
-    </update>
 
-    <!-- 通过fileId和fileHash获得所有的chunk -->
+    <!-- 通过fileHash获得所有的chunk,不通过fileId进行查找,因为不同用户可以上传相同文件,hash值相同 -->
     <select id="getAllChunksByFileIdAndFileHash" resultType="com.yg.mydrive.entity.Chunk">
         select id chunkId,
-            file_id fileId,
             file_hash fileHash,
             chunk_index chunkIndex,
             chunk_hash chunkHash,
             chunk_size chunkSize,
             upload_time uploadTime
         from file_chunk
-        where file_id = #{fileId};
+        where file_hash = #{fileHash};
     </select>
 
     <!-- 通过chunkId删除自身记录 -->
     <delete id="deleteChunkById">
         delete from file_chunk where id = #{chunkId};
     </delete>
+
+    <!-- 通过fileId获得所有所有分片信息,使用聚合函数计算文件总大小 -->
+    <select id="getFileSizeByFileId" resultType="java.lang.Long">
+        select sum(chunk_size)
+        from file_chunk
+        where file_hash = #{fileHash};
+    </select>
 </mapper>

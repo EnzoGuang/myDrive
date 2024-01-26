@@ -12,12 +12,12 @@ public interface ChunkMapper {
     // 将分片值插入数据库
     int insertChunk(Chunk chunk);
 
-    // 返回值表示有多少个属于同一个文件的分片的id值被更改,若和分片数相同，则更改成功
-    int updateFileIdByFileHash(@Param("fileId") int fileId, @Param("fileHash") String fileHash);
-
-    // 通过fileId和fileHash获得所有的chunk
-    List<Chunk> getAllChunksByFileIdAndFileHash(@Param("fileId") int fileId);
+    // 通过fileHash获得所有的chunk
+    List<Chunk> getAllChunksByFileIdAndFileHash(@Param("fileHash") String fileHash);
 
     // 通过chunkId删除自身记录
     int deleteChunkById(@Param("chunkId") int chunkId);
+
+    // 通过fileHash获得所有所有分片信息,使用聚合函数计算文件总大小
+    long getFileSizeByFileId(@Param("fileHash") String fileHash);
 }

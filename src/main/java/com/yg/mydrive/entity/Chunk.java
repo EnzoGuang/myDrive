@@ -2,7 +2,6 @@ package com.yg.mydrive.entity;
 
 public class Chunk {
     private int chunkId;
-    private int fileId;
     private String fileHash;
     private int chunkIndex;
     private String chunkHash;
@@ -23,7 +22,6 @@ public class Chunk {
     public String toString() {
         return "Chunk{" +
                 "chunkId=" + chunkId +
-                ", fileId=" + fileHash +
                 ", chunkIndex=" + chunkIndex +
                 ", chunkSize=" + chunkSize +
                 ", chunkHash='" + chunkHash + '\'' +
@@ -77,14 +75,6 @@ public class Chunk {
 
     public void setUploadTime(String uploadTime) {
         this.uploadTime = uploadTime;
-    }
-
-    public int getFileId() {
-        return fileId;
-    }
-
-    public void setFileId(int fileId) {
-        this.fileId = fileId;
     }
 
     public void setChunkSize(long chunkSize) {

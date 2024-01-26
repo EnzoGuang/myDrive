@@ -43,15 +43,26 @@
 		<!-- 显示当前用户的所有文件 -->
 		<div class="rouned-1">
 			<p class="p-1 ">文件</p>
-			<ul th:each="file:${filesList}" class="list-group rounded-1">
+			<ul th:each="file : ${filesList}" class="list-group rounded-1">
 				<li class="list-group-item rounded-1">
-					<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
-					[[${file.getFileName()}]]
-					<a th:href="@{/user/deleteFile/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-danger float-end m-1">删除</a>
-					<a th:href="@{/user/download/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-primary float-end m-1">下载</a>
+					<div class="d-flex justify-content-between align-items-center">
+						<div class="d-flex align-items-center">
+							<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
+							<span>[[${file.getFileName()}]]</span>
+						</div>
+						<div>
+							<span class="me-2">
+								<span th:if="${file.getFileSize() < 1024}">1 KB</span>
+								<span th:if="${file.getFileSize() >= 1024 and file.getFileSize() < 1024.0 * 1024.0 }">[[${#numbers.formatDecimal(file.getFileSize() / 1024.0, 1, 2)}]] KB</span>
+								<span th:if="${file.getFileSize() >= 1024 * 1024 and file.getFileSize() < 1024.0 * 1024.0 * 1024.0}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0), 1, 2)}]]MB</span>
+								<span th:if="${file.getFileSize() >= 1024 * 1024 * 1024}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0 * 1024.0), 1, 2)}]] GB</span>
+							</span>
+							<a th:href="@{/user/download/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-primary me-2">下载</a>
+							<a th:href="@{/user/deleteFile/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-danger me-1">删除</a>
+						</div>
+					</div>
 				</li>
 			</ul>
-			<br>
 		</div>
 
 		<!-- 进行文件上传 -->
@@ -73,7 +84,7 @@
 			<div id="hashStatus" class="hash-status mt-3"></div>
 		</div>
 
-		<script>
+		<script th:inline="javascript">
 			let selectedFile; // 用于存储选中的文件
 
 			// 监听文件选择变化

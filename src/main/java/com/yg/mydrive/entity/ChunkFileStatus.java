@@ -20,4 +20,8 @@ public class ChunkFileStatus {
     public void markChunkAsUploaded(int chunkIndex) {
         uploadChunks.add(chunkIndex);
     }
+
+    public int getTotalChunks() {
+        return totalChunks;
+    }
 }

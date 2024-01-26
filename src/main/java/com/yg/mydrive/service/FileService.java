@@ -124,13 +124,17 @@ public class FileService {
 
             // 判断文件的所有分片是否都上传完毕
             if (chunkFileStatus.isUploadComplete()) {
-                fileMapper.insertFile(new Files(fileName, fileHash, userId, getTime()));
+                fileMapper.insertFile(new Files(fileName, fileHash, chunkFileStatus.getTotalChunks(), userId, getTime()));
 
                 // 通过文件的hash值获得在表中的id
                 int fileId = fileMapper.findIdByFileHash(fileHash);
 
-                // 通过id更新chunk表,更新所有属于同一个文件的分片的id值
-                chunkMapper.updateFileIdByFileHash(fileId, fileHash);
+                // 通过fileHash获得分片大小,累加获得文件大小,写入文件表
+                long fileSize = chunkMapper.getFileSizeByFileId(fileHash);
+
+                // 将文件大小插入文件表
+                fileMapper.updateFileSizeByFileId(fileId, fileSize);
+
                 statusMap.remove(fileHash);
                 return ResponseEntity.ok().body("File uploaded successful");
             }
@@ -306,7 +310,7 @@ public class FileService {
         Integer fileId = getFileId(fileName, user, fileMapper);
 
         // 通过fileId和fileHash获得该文件的所有分片chunks
-        List<Chunk> chunks = chunkMapper.getAllChunksByFileIdAndFileHash(fileId);
+        List<Chunk> chunks = chunkMapper.getAllChunksByFileIdAndFileHash(fileHash);
 
         // 用于记录当前被已经被删除chunk个数
         int deletedChunks = 0;
@@ -316,6 +320,15 @@ public class FileService {
             if (chunkPathToDelete.exists()) {
                 // 在文件系统中删除该分片
                 chunkPathToDelete.delete();
+
+                // 如果该分片所处目录为空的话,删除该目录
+                File parentDir = new File(chunkPathToDelete.getParent());
+                if (parentDir.isDirectory()) {
+                    File[] files = parentDir.listFiles();
+                    if (files != null && files.length == 0) {
+                        parentDir.delete();
+                    }
+                }
 
                 // 删除分片表中的记录
                 int result = chunkMapper.deleteChunkById(chunk.getChunkId());

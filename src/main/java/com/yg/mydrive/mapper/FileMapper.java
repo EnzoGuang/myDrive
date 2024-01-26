@@ -28,4 +28,8 @@ public interface FileMapper {
 
     // 通过文件名和用户id删除该文件记录
     int deleteFileByFileNameAndUserId(@Param("fileName") String fileName, @Param("userId") Integer userId);
+
+
+    // 通过fileId更新文件大小
+    int updateFileSizeByFileId(@Param("fileId") int fileId, @Param("fileSize") long fileSize);
 }
