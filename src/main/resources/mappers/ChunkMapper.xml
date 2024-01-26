@@ -6,7 +6,7 @@
     </insert>
 
     <!-- 通过fileHash获得所有的chunk,不通过fileId进行查找,因为不同用户可以上传相同文件,hash值相同 -->
-    <select id="getAllChunksByFileIdAndFileHash" resultType="com.yg.mydrive.entity.Chunk">
+    <select id="getAllChunksByFileHash" resultType="com.yg.mydrive.entity.Chunk">
         select id chunkId,
             file_hash fileHash,
             chunk_index chunkIndex,
@@ -14,7 +14,8 @@
             chunk_size chunkSize,
             upload_time uploadTime
         from file_chunk
-        where file_hash = #{fileHash};
+        where file_hash = #{fileHash}
+        order by chunk_index;
     </select>
 
     <!-- 通过chunkId删除自身记录 -->

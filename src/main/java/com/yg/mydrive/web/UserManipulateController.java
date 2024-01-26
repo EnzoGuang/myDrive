@@ -13,9 +13,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -126,9 +128,9 @@ public class UserManipulateController {
     }
 
     @GetMapping("download/{fileName:.+}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException {
+    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException, UnsupportedEncodingException {
         User user = (User) session.getAttribute("currentUser");
-        return handleDownloadFile(fileName, user, fileMapper);
+        return handleDownloadFile(fileName, user, fileMapper, chunkMapper);
     }
 
     @GetMapping("deleteFile/{fileName:.+}")

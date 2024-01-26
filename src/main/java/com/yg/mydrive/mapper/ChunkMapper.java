@@ -13,7 +13,7 @@ public interface ChunkMapper {
     int insertChunk(Chunk chunk);
 
     // 通过fileHash获得所有的chunk
-    List<Chunk> getAllChunksByFileIdAndFileHash(@Param("fileHash") String fileHash);
+    List<Chunk> getAllChunksByFileHash(@Param("fileHash") String fileHash);
 
     // 通过chunkId删除自身记录
     int deleteChunkById(@Param("chunkId") int chunkId);

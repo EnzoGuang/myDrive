@@ -15,15 +15,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,11 +183,11 @@ public class FileService {
     }
 
     /**
-     * 获得分片的存储路径,用于删除分片
+     * 获得分片的存储路径,用于下载或删除分片
      * @param chunkHash
      * @return
      */
-    private static File getDirPathOfChunkToDelete(String chunkHash) {
+    private static File getDirPathOfChunkToDownloadOrDelete(String chunkHash) {
         File chunkDir = Utils.join(getUploadDir(), chunkHash.substring(0, 2));
         return Utils.join(chunkDir, chunkHash.substring(2));
     }
@@ -224,55 +228,55 @@ public class FileService {
         return resultTime;
     }
 
+    public static ResponseEntity<StreamingResponseBody> handleDownloadFile(String fileName,
+                                                                           User user,
+                                                                           FileMapper fileMapper,
+                                                                           ChunkMapper chunkMapper) throws UnsupportedEncodingException {
+        // 获得所有分片的路径
+        List<Path> chunkPaths = getChunkPaths(fileName, user, fileMapper, chunkMapper);
 
-    // TODO 分片上传后存储路径该变，函数逻辑改变
-    public static ResponseEntity<Resource> handleDownloadFile(String fileName, User user, FileMapper fileMapper) throws MalformedURLException {
-        Map<String, String> map = getFileHashAndStorageName(fileName, user, fileMapper);
-        // 获得文件的hash值
-        String fileHash = map.get("fileHash");
-        // 获得文件存储在文件系统的实际存储名字
-        String fileStorageName = map.get("fileStorageName");
-        // 获得文件的实际存储路径
-        Path fileStoragePath = getUploadDir().toPath().resolve(fileStorageName);
-
-        UrlResource resource = new UrlResource(fileStoragePath.toUri());
+        StreamingResponseBody responseBody = outputStream -> {
+            for (Path chunkPath: chunkPaths) {
+                if (java.nio.file.Files.exists(chunkPath)) {
+                    try (InputStream inputStream = new BufferedInputStream(java.nio.file.Files.newInputStream(chunkPath))) {
+                        byte[] buffer = new byte[1024 * 1024]; // 设置缓冲区1MB
+                        int length;
+                        while ((length = inputStream.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, length);
+                        }
+                    } catch (IOException e) {
+                        System.out.println(e + "合并分片出错");
+                    }
+                }
+            }
+        };
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName);
-        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
-
-        return ResponseEntity.ok().headers(headers).body(resource);
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(responseBody);
     }
 
-    /** TODO 需要更改
-     * helper method 返回一个map,里面包含文件hash值和文件实际存储名字
-     * 只存放两个键值对
-     *  1.key:fileHash
-     *  2.key:fileStorageName
+    /**
+     * 获得该文件所有分片的路径,通过index进行排序从小到大
+     * @param fileName 文件名
+     * @param user 当前用户
+     * @param fileMapper
+     * @param chunkMapper
+     * @return
      */
-    private static Map<String, String> getFileHashAndStorageName(String fileName, User user, FileMapper fileMapper) {
-        HashMap<String, String> map = new HashMap<>();
-        String fileHash = fileMapper.getHashOfFileByUserIdAndFileName(user.getUserId(), fileName);
-        String fileStorageName = concatHashPrefixAndFileName(fileHash, fileName);
-        map.put("fileHash", fileHash);
-        map.put("fileStorageName", concatHashPrefixAndFileName(fileHash, fileName));
-        return map;
-    }
-
-    /** TODO 需要更改
-     * 实际文件名存储在文件系统是通过 '前八位hash值' + '_' + '文件名' 组成
-     */
-    public static String concatHashPrefixAndFileName(String hash, String filename) {
-        try {
-            if (hash.length() < 8) {
-                throw new Exception("该hash值长度小于8, 不符合拼接文件名");
-            } else {
-                return hash.substring(0, 8) + "_" + filename;
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return null;
+    public static List<Path> getChunkPaths(String fileName, User user, FileMapper fileMapper, ChunkMapper chunkMapper) {
+        String fileHash = fileMapper.getFileHashByFileNameAndUserId(fileName, user.getUserId());
+        List<Chunk> chunks = chunkMapper.getAllChunksByFileHash(fileHash);
+        List<Path> chunkPaths = new ArrayList<>();
+        for (Chunk chunk: chunks) {
+            chunkPaths.add(getDirPathOfChunkToDownloadOrDelete(chunk.getChunkHash()).toPath());
         }
+        return chunkPaths;
     }
 
     /**
@@ -310,13 +314,13 @@ public class FileService {
         Integer fileId = getFileId(fileName, user, fileMapper);
 
         // 通过fileId和fileHash获得该文件的所有分片chunks
-        List<Chunk> chunks = chunkMapper.getAllChunksByFileIdAndFileHash(fileHash);
+        List<Chunk> chunks = chunkMapper.getAllChunksByFileHash(fileHash);
 
         // 用于记录当前被已经被删除chunk个数
         int deletedChunks = 0;
 
         for (Chunk chunk: chunks) {
-            File chunkPathToDelete = getDirPathOfChunkToDelete(chunk.getChunkHash());
+            File chunkPathToDelete = getDirPathOfChunkToDownloadOrDelete(chunk.getChunkHash());
             if (chunkPathToDelete.exists()) {
                 // 在文件系统中删除该分片
                 chunkPathToDelete.delete();
