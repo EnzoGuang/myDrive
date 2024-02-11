@@ -3,11 +3,18 @@ package com.yg.mydrive.entity;
 public class Folder {
     private int folderId;
     private String folderName;
-    private int parentFolderId;
+    private Integer parentFolderId;
     private int userId;
     private String createTime;
 
     public Folder() {}
+
+    public Folder(String folderName, Integer parentFolderId, int userId, String createTime) {
+        this.folderName = folderName;
+        this.parentFolderId = parentFolderId;
+        this.userId = userId;
+        this.createTime = createTime;
+    }
 
     public int getFolderId() {
         return folderId;
@@ -25,7 +32,7 @@ public class Folder {
         this.folderName = folderName;
     }
 
-    public int getParentFolderId() {
+    public Integer getParentFolderId() {
         return parentFolderId;
     }
 

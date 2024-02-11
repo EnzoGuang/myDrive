@@ -35,7 +35,7 @@ create table file_chunk(
 create table folder(
     id INT PRIMARY KEY AUTO_INCREMENT,
     folder_name VARCHAR(255),
-    parent_folder_id INT,
+    parent_folder_id INT DEFAULT NULL,
     user_id INT COMMENT '外键关联user表',
     create_time DATETIME,
     FOREIGN KEY (user_id) REFERENCES user(id)

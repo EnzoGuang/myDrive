@@ -1,7 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FolderMapper">
-    <insert id="createFolder">
-        insert into folder values (null, #{folderName}, #{parentFolderId}, #{userId}, #{createTime})
+    <!-- 将文件夹插入表 -->
+    <insert id="insertFolder">
+        insert into folder values (null, #{folderName}, #{parentFolderId}, #{userId}, #{createTime});
     </insert>
+
+    <!-- 根据用户当前目录id查询该目录下的所有子目录 -->
+    <select id="getFoldersByParentFolderIdAndUserId" resultType="com.yg.mydrive.entity.Folder">
+        select id folderId,
+            folder_name folderName,
+            parent_folder_id parentFolderId,
+            user_id userId,
+            create_time createTime
+        from folder
+        where parent_folder_id = #{parentFolderId} and user_id = #{userId};
+    </select>
+
+    <!-- 根据目录名查询目录id -->
+    <select id="getFolderIdByFolderName" resultType="java.lang.Integer">
+        select id folderId
+        from folder
+        where folder_name = #{folderName} and user_id = #{userId};
+    </select>
+
+    <!-- 查看用户根目录下的所有目录 -->
+    <select id="getRootFolder" resultType="com.yg.mydrive.entity.Folder">
+        select id folderId,
+               folder_name folderName,
+               parent_folder_id parentFolderId,
+               user_id userId,
+               create_time createTime
+        from folder
+        where parent_folder_id is null and user_id = #{userId};
+    </select>
 </mapper>

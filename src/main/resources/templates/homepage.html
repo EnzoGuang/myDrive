@@ -14,34 +14,142 @@
 	<body>
 		<!-- 引入header -->
 		<div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
-		<div>
-			这是homepage
-			<a href="/index" style="float: right" class="btn btn-primary">退出登录</a><br>
+<!--		<div>-->
+<!--			这是homepage-->
+<!--			<a href="/index" style="float: right" class="btn btn-primary">退出登录</a><br>-->
+<!--		</div>-->
+<!--		当前用户是-->
+<!--		<table class="layui-table">-->
+<!--			<thead class="layui-table-header">-->
+<!--				<tr>-->
+<!--					<th>id</th>-->
+<!--					<th>username</th>-->
+<!--					<th>password</th>-->
+<!--					<th>email</th>-->
+<!--					<th>admin</th>-->
+<!--				</tr>-->
+<!--			</thead>-->
+<!--			<tbody class="layui-table-body">-->
+<!--				<tr th:each="user:${currentUser}">-->
+<!--					<td th:text="${user.getUserId()}"></td>-->
+<!--					<td th:text="${user.getUserName()}"></td>-->
+<!--					<td th:text="${user.getPassword()}"></td>-->
+<!--					<td th:text="${user.getEmail()}"></td>-->
+<!--					<td th:text="${user.getAdmin()}"></td>-->
+<!--				</tr>-->
+<!--			</tbody>-->
+<!--		</table>-->
+
+		<!-- 显示用户所有文件夹 -->
+		<div class="round-1">
+			<div class="d-flex justify-content-lg-start align-items-center mb-2">
+				<p class="p-1 mb-0">文件夹</p>
+
+				<!-- 按钮触发模态框 -->
+				<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createFolderModal">
+					新增文件夹
+				</button>
+			</div>
+
+			<ul th:each="folder : ${foldersList}" class="list-group rounded-1">
+				<li class="list-group-item rounded-1">
+					<a th:href="@{/user/homepage/{folderName}(folderName=${folder.getFolderName()})}" class="d-flex justify-content-between align-items-center text-dark text-decoration-none">
+						<div class="d-flex align-items-center">
+							<img th:src="@{/icon/icons8-folder.svg}" alt="folder" class="img-fluid mr-2">
+							<span th:text="${folder.getFolderName()}">Folder Name</span>
+						</div>
+					</a>
+				</li>
+			</ul>
+
 		</div>
-		当前用户是
-		<table class="layui-table">
-			<thead class="layui-table-header">
-				<tr>
-					<th>id</th>
-					<th>username</th>
-					<th>password</th>
-					<th>email</th>
-					<th>admin</th>
-				</tr>
-			</thead>
-			<tbody class="layui-table-body">
-				<tr th:each="user:${currentUser}">
-					<td th:text="${user.getUserId()}"></td>
-					<td th:text="${user.getUserName()}"></td>
-					<td th:text="${user.getPassword()}"></td>
-					<td th:text="${user.getEmail()}"></td>
-					<td th:text="${user.getAdmin()}"></td>
-				</tr>
-			</tbody>
-		</table>
+
+		<!-- 用户点击想要进入的文件夹调用该函数 -->
+		<script>
+			function loadFolderContents(folderName) {
+				const encodeFolderName = encodeURIComponent(folderName);
+
+				fetch(`/user/homepage/${encodeFolderName}`)
+					.then(response => {
+						if (!response.ok) {
+							throw new Error("get Folder error");
+						}
+						return response.text();
+					})
+					.catch(error => {
+						console.log('加载' + folderName + '目录内容失败', error);
+						alert('加载' + folderName + '目录内容失败');
+					});
+			}
+		</script>
+
+		<br><br>
+
+		<!-- 模态框 -->
+		<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">创建新文件夹</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<input type="text" class="form-control" id="folderNameInput" placeholder="输入文件夹名称">
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+						<button type="button" class="btn btn-primary" onclick="createFolder()">创建</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!--		&lt;!&ndash; 引入js &ndash;&gt;-->
+		<!--		<script th:src="@{/jquery/jquery-3.7.1.min.js}"></script>-->
+		<!--		&lt;!&ndash; 引入bootstrap js &ndash;&gt;-->
+		<!--		<script th:src="@{/bootstrap/js/bootstrap.js}"></script>-->
+		<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+		<!-- 创建文件夹js函数,和模态对话框 -->
+		<script>
+			function createFolder() {
+				console.log('进入函数')
+				var folderName = document.getElementById('folderNameInput').value.trim();
+				if (folderName) {
+					// 构建FormData对象
+					var formData = new FormData();
+					formData.append('folderName', folderName);
+
+					// 发送AJAX请求到后端
+					fetch('/user/createFolder', {
+						method: 'POST',
+						body: formData  // 使用FormData发送数据
+					})
+						.then(response => {
+							if (response.ok) {
+								return response.text();
+							}
+							throw new Error('请求失败');
+						})
+						.then(data => {
+							alert("文件夹创建成功");
+							$('#createFolderModal').modal('hide'); // 关闭模态框
+							window.location.reload(); //请求成功后刷新页面
+						})
+						.catch(error => {
+							alert("文件夹创建失败: " + error.message);
+						});
+				} else {
+					alert("文件夹名称不能为空！");
+				}
+			}
+		</script>
 
 		<!-- 显示当前用户的所有文件 -->
-		<div class="rouned-1">
+		<div class="round-1">
 			<p class="p-1 ">文件</p>
 			<ul th:each="file : ${filesList}" class="list-group rounded-1">
 				<li class="list-group-item rounded-1">
@@ -101,6 +209,7 @@
 					// 设置分片大小位10MB
 					const chunkSize = 10 * 1024 * 1024;
 					const totalChunks = Math.ceil(selectedFile.size / chunkSize);
+					let uploadSuccess = true; // 追踪文件上传是否成功
 
 					for (let i = 0; i < totalChunks; i++) {
 						const chunk = selectedFile.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -128,9 +237,15 @@
 						} catch (error) {
 							console.error(error);
 							alert(`上传失败: ${error.message}`);
+							uploadSuccess = false;
 							break;
 						}
 					}
+					if (uploadSuccess) {
+						// 如果所有分片都成功上传，则刷新页面
+						window.location.reload();
+					}
+
 				} else {
 					alert("请先选择一个文件! ");
 				}
@@ -164,6 +279,7 @@
 				}
 			}
 		</script>
+
 
 		<div th:if="${uploadMessage}">
 			[[${uploadMessage}]]

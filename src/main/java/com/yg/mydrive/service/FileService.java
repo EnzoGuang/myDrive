@@ -1,13 +1,9 @@
 package com.yg.mydrive.service;
 
-import com.yg.mydrive.entity.Chunk;
-import com.yg.mydrive.entity.ChunkFileStatus;
-import com.yg.mydrive.entity.Files;
-import com.yg.mydrive.entity.User;
+import com.yg.mydrive.entity.*;
 import com.yg.mydrive.mapper.ChunkMapper;
 import com.yg.mydrive.mapper.FileMapper;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+import com.yg.mydrive.mapper.FolderMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,7 +15,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import javax.servlet.http.HttpSession;
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -28,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -228,6 +222,15 @@ public class FileService {
         return resultTime;
     }
 
+    /**
+     * 下载文件
+     * @param fileName
+     * @param user
+     * @param fileMapper
+     * @param chunkMapper
+     * @return
+     * @throws UnsupportedEncodingException
+     */
     public static ResponseEntity<StreamingResponseBody> handleDownloadFile(String fileName,
                                                                            User user,
                                                                            FileMapper fileMapper,
@@ -239,7 +242,10 @@ public class FileService {
             for (Path chunkPath: chunkPaths) {
                 if (java.nio.file.Files.exists(chunkPath)) {
                     try (InputStream inputStream = new BufferedInputStream(java.nio.file.Files.newInputStream(chunkPath))) {
-                        byte[] buffer = new byte[1024 * 1024]; // 设置缓冲区1MB
+
+                        // 设置缓冲区1MB
+                        byte[] buffer = new byte[1024 * 1024];
+
                         int length;
                         while ((length = inputStream.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, length);
@@ -252,7 +258,10 @@ public class FileService {
         };
 
         HttpHeaders headers = new HttpHeaders();
+
+        // 编码文件名,若文件名含有中文或其他特殊字符不进行编码,文件名会出错
         String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
         return ResponseEntity
                 .ok()
@@ -345,5 +354,25 @@ public class FileService {
             return fileMapper.deleteFileByFileNameAndUserId(fileName, user.getUserId());
         }
         return 0;
+    }
+
+    /**
+     * 实现创建文件夹功能, 同级目录下不能有同名文件夹
+     * @param folderName
+     * @param parentFolderId
+     * @param user
+     * @param folderMapper
+     * @return
+     */
+    public static ResponseEntity<String> handleCreateFolder(String folderName, Integer parentFolderId, User user, FolderMapper folderMapper) {
+        try {
+            Folder folder = new Folder(folderName, parentFolderId, user.getUserId(), getTime());
+            folderMapper.insertFolder(folder);
+            // 创建成功，返回201 Created状态码和一些可选的响应体信息
+            return ResponseEntity.status(HttpStatus.CREATED).body("文件夹创建成功");
+        } catch (Exception e) {
+            // 发生错误，返回服务器内部错误状态码500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("文件夹创建失败: " + e.getMessage());
+        }
     }
 }

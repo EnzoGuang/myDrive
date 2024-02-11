@@ -1,13 +1,14 @@
 package com.yg.mydrive.web;
 
 import com.yg.mydrive.entity.Files;
+import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.ChunkMapper;
 import com.yg.mydrive.mapper.FileMapper;
+import com.yg.mydrive.mapper.FolderMapper;
 import com.yg.mydrive.mapper.UserMapper;
 import com.yg.mydrive.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -22,8 +24,7 @@ import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import static com.yg.mydrive.service.FileService.handleDeleteFileByName;
-import static com.yg.mydrive.service.FileService.handleDownloadFile;
+import static com.yg.mydrive.service.FileService.*;
 
 
 @Controller
@@ -38,6 +39,9 @@ public class UserManipulateController {
 
     @Autowired
     ChunkMapper chunkMapper;
+
+    @Autowired
+    FolderMapper folderMapper;
 
     /**
      * 进行用户登录时,通过邮箱和密码进行鉴别
@@ -66,20 +70,48 @@ public class UserManipulateController {
     }
 
     /**
-     * 用户上传完文件后,返回用户主页面
+     * 映射根目录访问
      * @param modelMap
      * @param session
      * @return
      */
     @RequestMapping("homepage")
-    public String homePage(ModelMap modelMap, HttpSession session) {
+    public String homepageRoot(ModelMap modelMap, HttpSession session) {
+        return homePage(modelMap, session, null);
+    }
+
+    /**
+     * 包含用户指定目录名的访问
+     * @param modelMap
+     * @param session
+     * @return
+     */
+    @RequestMapping("homepage/{folderName}")
+    public String homePage(ModelMap modelMap, HttpSession session, @PathVariable(required = false) String folderName) {
+        modelMap.clear();
         User user = (User) session.getAttribute("currentUser");
-        modelMap.put("currentUser", user);
-        List<Files> filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), null);
-        modelMap.put("filesList", filesList);
         if (user == null) {
             return "redirect:/index";
         }
+        modelMap.put("currentUser", user);
+
+        // TODO 通过当前目录名获得该目录下的所有文件名
+        List<Files> filesList;
+        List<Folder> foldersList;
+
+        // 如果没有传入目录名, 默认显示根目录的所有内容
+        if (folderName == null || folderName.isEmpty()) {
+            filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), null);
+            foldersList = folderMapper.getRootFolder(user.getUserId());
+        } else {
+            Integer folderId = folderMapper.getFolderIdByFolderName(folderName, user.getUserId());
+            filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), folderId);
+            foldersList = folderMapper.getFoldersByParentFolderIdAndUserId(folderId, user.getUserId());
+        }
+
+        modelMap.put("filesList", filesList);
+        modelMap.put("foldersList", foldersList);
+
         return "homepage";
     }
 
@@ -101,7 +133,7 @@ public class UserManipulateController {
         if (user == null) {
             return "redirect:/index";
         }
-        ResponseEntity responseEntity = FileService.handleUploadFile(file, session, fileMapper);
+        ResponseEntity responseEntity = handleUploadFile(file, session, fileMapper);
         modelMap.put("uploadMessage", responseEntity.getBody());
         redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
         return "redirect:/user/homepage";
@@ -121,7 +153,7 @@ public class UserManipulateController {
         if (user == null) {
             return "redirect:/index";
         }
-        ResponseEntity responseEntity = FileService.handleUploadChunkFile(user.getUserId(), chunk, fileName, index, fileHash, clientChunkHash, totalChunks, chunkMapper, fileMapper);
+        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName, index, fileHash, clientChunkHash, totalChunks, chunkMapper, fileMapper);
         modelMap.put("uploadMessage", responseEntity.getBody());
         redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
         return "redirect:/user/homepage";
@@ -143,6 +175,19 @@ public class UserManipulateController {
             modelMap.put("deleteMessage", fileName + " delete fail");
         }
         return "redirect:/user/homepage";
+    }
+
+    /**
+     * 创建文件夹
+     * @param folderName
+     * @param session
+     * @param modelMap
+     * @return
+     */
+    @PostMapping("createFolder")
+    public ResponseEntity<String> createFolder(@RequestParam String folderName, HttpSession session, ModelMap modelMap) {
+        User user = (User) session.getAttribute("currentUser");
+        return handleCreateFolder(folderName, null, user, folderMapper);
     }
 
 }
