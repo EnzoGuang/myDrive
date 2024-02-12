@@ -104,8 +104,10 @@ public class FileService {
                                                                String fileHash,
                                                                String clientChunkHash,
                                                                int totalChunks,
+                                                               String parentFolderName,
                                                                ChunkMapper chunkMapper,
-                                                               FileMapper fileMapper) throws NoSuchAlgorithmException, IOException {
+                                                               FileMapper fileMapper,
+                                                               FolderMapper folderMapper) throws NoSuchAlgorithmException, IOException {
         try {
             // 判断文件在传输过程中是否被篡改
             String chunkHash = getHashOfFile(chunk);
@@ -122,8 +124,13 @@ public class FileService {
 
             // 判断文件的所有分片是否都上传完毕
             if (chunkFileStatus.isUploadComplete()) {
-                fileMapper.insertFile(new Files(fileName, fileHash, chunkFileStatus.getTotalChunks(), userId, getTime()));
+                Integer parentFolderId = folderMapper.getFolderIdByFolderName(parentFolderName, userId);
+                if (parentFolderId == null) {
+                    fileMapper.insertFile(new Files(fileName, fileHash, chunkFileStatus.getTotalChunks(), userId, getTime()));
+                } else {
+                    fileMapper.insertFileToSubFolder(new Files(fileName, fileHash, chunkFileStatus.getTotalChunks(), parentFolderId, userId, getTime()));
 
+                }
                 // 通过文件的hash值获得在表中的id
                 int fileId = fileMapper.findIdByFileHash(fileHash);
 
@@ -359,13 +366,29 @@ public class FileService {
     /**
      * 实现创建文件夹功能, 同级目录下不能有同名文件夹
      * @param folderName
-     * @param parentFolderId
      * @param user
      * @param folderMapper
      * @return
      */
-    public static ResponseEntity<String> handleCreateFolder(String folderName, Integer parentFolderId, User user, FolderMapper folderMapper) {
+    public static ResponseEntity<String> handleCreateFolder(String folderName, String parentFolderName,  User user, FolderMapper folderMapper) {
         try {
+            Integer parentFolderId;
+            List<Folder> foldersList;
+            if (parentFolderName.equals("null")) {
+                // 如果parentFolderName值为null,意味着当前父目录为根目录
+                parentFolderId = null;
+                foldersList = folderMapper.getRootFolder(user.getUserId());
+            } else {
+                // 否则通过parentFolderName父文件夹名字进行查找FolderId
+                parentFolderId = folderMapper.getFolderIdByFolderName(parentFolderName, user.getUserId());
+                foldersList = folderMapper.getFoldersByParentFolderIdAndUserId(parentFolderId, user.getUserId());
+            }
+            for (Folder folder: foldersList) {
+                if (folder.getFolderName().equals(folderName)) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("文件夹名不能重复");
+                }
+            }
+
             Folder folder = new Folder(folderName, parentFolderId, user.getUserId(), getTime());
             folderMapper.insertFolder(folder);
             // 创建成功，返回201 Created状态码和一些可选的响应体信息

@@ -9,8 +9,11 @@ import java.util.List;
 @Mapper
 public interface FileMapper {
 
-    // 将文件加入表中
+    // 在根目录下将文件加入表中
     int insertFile(Files file);
+
+    // 在子目录下将文件加入表中
+    int insertFileToSubFolder(Files file);
 
     int findIdByFileHash(@Param("fileHash") String fileHash);
 

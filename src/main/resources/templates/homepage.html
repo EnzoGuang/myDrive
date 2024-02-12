@@ -14,31 +14,8 @@
 	<body>
 		<!-- 引入header -->
 		<div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
-<!--		<div>-->
-<!--			这是homepage-->
-<!--			<a href="/index" style="float: right" class="btn btn-primary">退出登录</a><br>-->
-<!--		</div>-->
-<!--		当前用户是-->
-<!--		<table class="layui-table">-->
-<!--			<thead class="layui-table-header">-->
-<!--				<tr>-->
-<!--					<th>id</th>-->
-<!--					<th>username</th>-->
-<!--					<th>password</th>-->
-<!--					<th>email</th>-->
-<!--					<th>admin</th>-->
-<!--				</tr>-->
-<!--			</thead>-->
-<!--			<tbody class="layui-table-body">-->
-<!--				<tr th:each="user:${currentUser}">-->
-<!--					<td th:text="${user.getUserId()}"></td>-->
-<!--					<td th:text="${user.getUserName()}"></td>-->
-<!--					<td th:text="${user.getPassword()}"></td>-->
-<!--					<td th:text="${user.getEmail()}"></td>-->
-<!--					<td th:text="${user.getAdmin()}"></td>-->
-<!--				</tr>-->
-<!--			</tbody>-->
-<!--		</table>-->
+		<!-- 用于调试, 显示当前用户信息 -->
+<!--		<div th:insert="~{common :: currentUserInfo}"></div>-->
 
 		<!-- 显示用户所有文件夹 -->
 		<div class="round-1">
@@ -57,6 +34,7 @@
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/icons8-folder.svg}" alt="folder" class="img-fluid mr-2">
 							<span th:text="${folder.getFolderName()}">Folder Name</span>
+							// TODO 创建删除文件夹按钮
 						</div>
 					</a>
 				</li>
@@ -113,15 +91,28 @@
 		<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-		<!-- 创建文件夹js函数,和模态对话框 -->
+		<!-- 处理创建文件夹js函数,和模态对话框 -->
 		<script>
 			function createFolder() {
+				// 获得当前path的最后一个路径段
+				var lastPathSegment = getLastPathSegment();
+				var parentFolderName;
+
+				// 如果当前路径为homepage,即当前用户在根目录下
+				if (lastPathSegment === "homepage") {
+					parentFolderName = "null";
+				} else {
+					parentFolderName = lastPathSegment.toString();
+				}
 				console.log('进入函数')
 				var folderName = document.getElementById('folderNameInput').value.trim();
 				if (folderName) {
 					// 构建FormData对象
 					var formData = new FormData();
+					// 添加新建文件夹的名字
 					formData.append('folderName', folderName);
+					// 添加父文件夹名
+					formData.append('parentFolderName', parentFolderName);
 
 					// 发送AJAX请求到后端
 					fetch('/user/createFolder', {
@@ -131,8 +122,12 @@
 						.then(response => {
 							if (response.ok) {
 								return response.text();
+							} else {
+								return response.text().then(text => {
+									throw new Error(text);
+								})
 							}
-							throw new Error('请求失败');
+							//throw new Error('请求失败');
 						})
 						.then(data => {
 							alert("文件夹创建成功");
@@ -145,6 +140,13 @@
 				} else {
 					alert("文件夹名称不能为空！");
 				}
+			}
+
+			// 获得当前url的最后一个路径段
+			function getLastPathSegment() {
+				var pathArray = window.location.pathname.split('/');
+				var lastSegment = pathArray.pop();
+				return lastSegment;
 			}
 		</script>
 
@@ -192,8 +194,20 @@
 			<div id="hashStatus" class="hash-status mt-3"></div>
 		</div>
 
+		<!-- 处理文件上传逻辑 -->
 		<script th:inline="javascript">
 			let selectedFile; // 用于存储选中的文件
+
+			// 获得当前path的最后一个路径段
+			var lastPathSegment = getLastPathSegment();
+			var parentFolderName;
+
+			// 如果当前路径为homepage,即当前用户在根目录下
+			if (lastPathSegment === "homepage") {
+				parentFolderName = "null";
+			} else {
+				parentFolderName = lastPathSegment.toString();
+			}
 
 			// 监听文件选择变化
 			document.getElementById('fileInput').addEventListener('change', (event) => {
@@ -223,6 +237,7 @@
 						formData.append('fileHash', fileHash);
 						formData.append('chunkHash', chunkHash);
 						formData.append("totalChunks", totalChunks);
+						formData.append("parentFolderName", parentFolderName);
 
 						try {
 							const response = await fetch('http://localhost:8080/user/uploadChunkFile', {
@@ -277,6 +292,13 @@
 				if (hashStatusElement) {
 					hashStatusElement.innerText = message;
 				}
+			}
+
+			// 获得当前url的最后一个路径段
+			function getLastPathSegment() {
+				var pathArray = window.location.pathname.split('/');
+				var lastSegment = pathArray.pop();
+				return lastSegment;
 			}
 		</script>
 

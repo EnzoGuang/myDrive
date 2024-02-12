@@ -11,7 +11,7 @@ create table user(
 create table file(
     id INT PRIMARY KEY AUTO_INCREMENT,
     file_name VARCHAR(255),
-    file_hash VARCHAR(255) UNIQUE COMMENT '存储文件的SHA-256的hash值',
+    file_hash VARCHAR(255) COMMENT '存储文件的SHA-256的hash值',
     file_size BIGINT DEFAULT 0 COMMENT '文件大小',
     total_chunks INT UNSIGNED COMMENT '表示该文件由多少个分片组成',
     folder_id INT COMMENT '外键关联folder表,表示当前文件所属哪个文件夹下,若为null则该文件属于根目录',

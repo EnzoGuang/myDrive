@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FileMapper">
+
+    <!-- 在根目录下插入文件 -->
     <insert id="insertFile">
         insert into file values (null, #{fileName}, #{fileHash}, null, #{totalChunks}, null, #{userId}, #{uploadTime});
     </insert>
+
+    <!-- 在子目录下将文件加入表中 -->
+    <insert id="insertFileToSubFolder">
+        insert into file values (null, #{fileName}, #{fileHash}, null, #{totalChunks}, #{folderId}, #{userId}, #{uploadTime});
+    </insert>
+
 
     <delete id="deleteFileByFileName" >
         delete from file where file_name = #{fileName} and user_id = #{userId}

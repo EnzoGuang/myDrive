@@ -11,6 +11,7 @@ import com.yg.mydrive.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,6 +71,17 @@ public class UserManipulateController {
     }
 
     /**
+     * 用户退出登录
+     * @param session
+     * @return
+     */
+    @GetMapping("logout")
+    public String logout(HttpSession session) {
+        session.removeAttribute("currentUser");
+        return "redirect:/index";
+    }
+
+    /**
      * 映射根目录访问
      * @param modelMap
      * @param session
@@ -95,7 +107,6 @@ public class UserManipulateController {
         }
         modelMap.put("currentUser", user);
 
-        // TODO 通过当前目录名获得该目录下的所有文件名
         List<Files> filesList;
         List<Folder> foldersList;
 
@@ -118,26 +129,26 @@ public class UserManipulateController {
 
     /**
      * 处理用户的文件上传
-     * @param file
+     * @param
      * @param modelMap
      * @param session
      * @param redirectAttributes
      * @return
      */
-    @PostMapping("uploadFile")
-    public String uploadFile(@RequestParam("file") MultipartFile file,
-                             ModelMap modelMap,
-                             HttpSession session,
-                             RedirectAttributes redirectAttributes) {
-        User user = (User) session.getAttribute("currentUser");
-        if (user == null) {
-            return "redirect:/index";
-        }
-        ResponseEntity responseEntity = handleUploadFile(file, session, fileMapper);
-        modelMap.put("uploadMessage", responseEntity.getBody());
-        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
-        return "redirect:/user/homepage";
-    }
+//    @PostMapping("uploadFile")
+//    public String uploadFile(@RequestParam("file") MultipartFile file,
+//                             ModelMap modelMap,
+//                             HttpSession session,
+//                             RedirectAttributes redirectAttributes) {
+//        User user = (User) session.getAttribute("currentUser");
+//        if (user == null) {
+//            return "redirect:/index";
+//        }
+//        ResponseEntity responseEntity = handleUploadFile(file, session, fileMapper);
+//        modelMap.put("uploadMessage", responseEntity.getBody());
+//        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
+//        return "redirect:/user/homepage";
+//    }
 
     @PostMapping("uploadChunkFile")
     public String uploadChunkFile(@RequestParam("file") MultipartFile chunk,
@@ -146,6 +157,7 @@ public class UserManipulateController {
                                   @RequestParam("fileHash") String fileHash,
                                   @RequestParam("chunkHash") String clientChunkHash,
                                   @RequestParam("totalChunks") int totalChunks,
+                                  @RequestParam("parentFolderName") String folderName,
                                   ModelMap modelMap,
                                   HttpSession session,
                                   RedirectAttributes redirectAttributes) throws NoSuchAlgorithmException, IOException {
@@ -153,7 +165,9 @@ public class UserManipulateController {
         if (user == null) {
             return "redirect:/index";
         }
-        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName, index, fileHash, clientChunkHash, totalChunks, chunkMapper, fileMapper);
+        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName,
+                                                        index, fileHash, clientChunkHash, totalChunks, folderName,
+                                                        chunkMapper, fileMapper, folderMapper);
         modelMap.put("uploadMessage", responseEntity.getBody());
         redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
         return "redirect:/user/homepage";
@@ -185,9 +199,12 @@ public class UserManipulateController {
      * @return
      */
     @PostMapping("createFolder")
-    public ResponseEntity<String> createFolder(@RequestParam String folderName, HttpSession session, ModelMap modelMap) {
+    public ResponseEntity<String> createFolder(@RequestParam String folderName,
+                                               @RequestParam String parentFolderName,
+                                               HttpSession session,
+                                               ModelMap modelMap) {
         User user = (User) session.getAttribute("currentUser");
-        return handleCreateFolder(folderName, null, user, folderMapper);
+        return handleCreateFolder(folderName, parentFolderName, user, folderMapper);
     }
 
 }

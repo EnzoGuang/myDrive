@@ -6,11 +6,20 @@ public class Files {
     private String fileHash;
     private long fileSize;
     private int totalChunks;
-    private int folderId;
-    private int userId;
+    private Integer folderId;
+    private Integer userId;
     private String uploadTime;
 
-    public Files(String fileName, String fileHash, int totalChunks, int userId, String uploadTime) {
+    public Files(String fileName, String fileHash, int totalChunks, Integer folderId, Integer userId, String uploadTime) {
+        this.fileName = fileName;
+        this.fileHash = fileHash;
+        this.totalChunks = totalChunks;
+        this.folderId = folderId;
+        this.userId = userId;
+        this.uploadTime = uploadTime;
+    }
+
+    public Files(String fileName, String fileHash, int totalChunks, Integer userId, String uploadTime) {
         this.fileName = fileName;
         this.fileHash = fileHash;
         this.totalChunks = totalChunks;
@@ -78,7 +87,7 @@ public class Files {
         this.totalChunks = totalChunks;
     }
 
-    public int getFolderId() {
+    public Integer getFolderId() {
         return folderId;
     }
 
@@ -86,7 +95,7 @@ public class Files {
         this.folderId = folderId;
     }
 
-    public int getUserId() {
+    public Integer getUserId() {
         return userId;
     }
 
