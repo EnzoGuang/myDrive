@@ -1,30 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FileMapper">
-
-    <!-- 在根目录下插入文件 -->
-    <insert id="insertFile">
-        insert into file values (null, #{fileName}, #{fileHash}, null, #{totalChunks}, null, #{userId}, #{uploadTime});
-    </insert>
-
-    <!-- 在子目录下将文件加入表中 -->
-    <insert id="insertFileToSubFolder">
-        insert into file values (null, #{fileName}, #{fileHash}, null, #{totalChunks}, #{folderId}, #{userId}, #{uploadTime});
-    </insert>
-
-
-    <delete id="deleteFileByFileName" >
-        delete from file where file_name = #{fileName} and user_id = #{userId}
-    </delete>
-
+    <!-- 通过用户id和父文件id该查找该路径下所有文件 -->
     <select id="findFileByUserIdAndFolderId" resultType="com.yg.mydrive.entity.Files">
         select file_name fileName,
-               file_hash fileHash,
-               file_size fileSize,
-               folder_id folderId,
-               user_id userId,
-               upload_time uploadTime,
-               id fileId
+        file_hash fileHash,
+        file_size fileSize,
+        total_chunks totalChunk,
+        folder_id folderId,
+        user_id userId,
+        version_control_enabled versionControlEnabled,
+        current_version_id currentVersionId,
+        upload_time uploadTime,
+        id fileId
         from file where user_id = ${userId}
         <if test="folderId == null">
             and folder_id is null
@@ -34,33 +22,14 @@
         </if>
     </select>
 
-    <!-- 用于用户下载文件时使用,通过用户id和文件名找到该文件的hash值,拼接hash值和文件名找到实际上存储在文件系统的文件名-->
-    <select id="getHashOfFileByUserIdAndFileName" resultType="java.lang.String">
-        select file_hash fileHash from file where user_id = #{userId} and file_name = #{fileName}
-    </select>
+    <!-- 初始化文件记录 -->
+    <insert id="initializeFile" useGeneratedKeys="true" keyProperty="file.fileId" keyColumn="id">
+        insert into file (file_name, file_hash, total_chunks, folder_id, user_id, upload_time)
+        values (#{file.fileName}, #{file.fileHash}, #{file.totalChunks}, #{file.folderId}, #{file.userId}, #{file.uploadTime})
+    </insert>
 
-    <!-- 通过文件hash查找文件的id -->
-    <select id="findIdByFileHash" resultType="java.lang.Integer">
-        select id fileId from file where file_hash = #{fileHash} limit 1;
-    </select>
-
-    <!-- 通过用户id和文件名查找文件的hash值 -->
-    <select id="getFileHashByFileNameAndUserId" resultType="java.lang.String">
-        select file_hash fileHash from file where file_name = #{fileName} and user_id = #{userId};
-    </select>
-
-    <!-- 通过用户id和文件名获得文件的id值 -->
-    <select id="getFileIdByFileNameAndUserId" resultType="java.lang.Integer">
-        select id fileId from file where file_name = #{fileName} and user_id = #{userId};
-    </select>
-
-    <!-- 通过文件名和用户id删除该文件记录 -->
-    <delete id="deleteFileByFileNameAndUserId">
-        delete from file where file_name = #{fileName} and user_id = #{userId};
-    </delete>
-
-    <!-- 通过fileId更新文件大小 -->
-    <update id="updateFileSizeByFileId">
+    <!-- 根据文件id,更新该文件的大小 -->
+    <update id="updateFileSize">
         update file set file_size = #{fileSize} where id = #{fileId};
     </update>
 

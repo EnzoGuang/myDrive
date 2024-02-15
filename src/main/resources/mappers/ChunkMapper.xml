@@ -1,32 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.ChunkMapper">
-    <insert id="insertChunk">
-        insert into file_chunk values (null, #{fileHash}, #{chunkIndex}, #{chunkHash}, #{chunkSize}, #{uploadTime});
-    </insert>
 
-    <!-- 通过fileHash获得所有的chunk,不通过fileId进行查找,因为不同用户可以上传相同文件,hash值相同 -->
-    <select id="getAllChunksByFileHash" resultType="com.yg.mydrive.entity.Chunk">
-        select id chunkId,
-            file_hash fileHash,
-            chunk_index chunkIndex,
-            chunk_hash chunkHash,
-            chunk_size chunkSize,
-            upload_time uploadTime
-        from file_chunk
-        where file_hash = #{fileHash}
-        order by chunk_index;
-    </select>
+    <!-- 将分片记录插入数据库 -->
+    <insert id="insertChunk" useGeneratedKeys="true" keyProperty="chunkId" keyColumn="id">
+        insert into chunk values (null, #{chunkHash}, 1, #{chunkSize}, #{uploadTime});
+    </insert>
 
     <!-- 通过chunkId删除自身记录 -->
     <delete id="deleteChunkById">
-        delete from file_chunk where id = #{chunkId};
+        delete from chunk where id = #{chunkId};
     </delete>
 
-    <!-- 通过fileId获得所有所有分片信息,使用聚合函数计算文件总大小 -->
-    <select id="getFileSizeByFileId" resultType="java.lang.Long">
-        select sum(chunk_size)
-        from file_chunk
-        where file_hash = #{fileHash};
+    <!-- 通过chunkHash查找表里是否保存该分片 -->
+    <select id="checkChunkExistsByHash" resultType="java.lang.Integer">
+        select id chunkId
+        from chunk
+        where chunk_hash = #{chunkHash}
     </select>
+
+    <!-- 如果需要上传的分片在服务端已存储,不需要再存储,只需要增加引用次数 -->
+    <update id="updateReferenceCountByHash">
+        update chunk
+        set reference_count = reference_count + 1
+        where chunk_hash = #{chunkHash};
+    </update>
+
 </mapper>

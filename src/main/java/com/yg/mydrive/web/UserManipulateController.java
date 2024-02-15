@@ -3,28 +3,15 @@ package com.yg.mydrive.web;
 import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
-import com.yg.mydrive.mapper.ChunkMapper;
-import com.yg.mydrive.mapper.FileMapper;
-import com.yg.mydrive.mapper.FolderMapper;
-import com.yg.mydrive.mapper.UserMapper;
-import com.yg.mydrive.service.FileService;
+import com.yg.mydrive.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import javax.servlet.http.HttpSession;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
-
 import static com.yg.mydrive.service.FileService.*;
 
 
@@ -40,6 +27,9 @@ public class UserManipulateController {
 
     @Autowired
     ChunkMapper chunkMapper;
+
+    @Autowired
+    FileChunkMapper fileChunkMapper;
 
     @Autowired
     FolderMapper folderMapper;
@@ -98,8 +88,8 @@ public class UserManipulateController {
      * @param session
      * @return
      */
-    @RequestMapping("homepage/{folderName}")
-    public String homePage(ModelMap modelMap, HttpSession session, @PathVariable(required = false) String folderName) {
+    @RequestMapping("homepage/{folderId}")
+    public String homePage(ModelMap modelMap, HttpSession session, @PathVariable(required = false) Integer folderId) {
         modelMap.clear();
         User user = (User) session.getAttribute("currentUser");
         if (user == null) {
@@ -111,11 +101,10 @@ public class UserManipulateController {
         List<Folder> foldersList;
 
         // 如果没有传入目录名, 默认显示根目录的所有内容
-        if (folderName == null || folderName.isEmpty()) {
+        if (folderId == null ) {
             filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), null);
             foldersList = folderMapper.getRootFolder(user.getUserId());
         } else {
-            Integer folderId = folderMapper.getFolderIdByFolderName(folderName, user.getUserId());
             filesList = fileMapper.findFileByUserIdAndFolderId(user.getUserId(), folderId);
             foldersList = folderMapper.getFoldersByParentFolderIdAndUserId(folderId, user.getUserId());
         }
@@ -127,69 +116,107 @@ public class UserManipulateController {
     }
 
 
-    /**
-     * 处理用户的文件上传
-     * @param
-     * @param modelMap
-     * @param session
-     * @param redirectAttributes
-     * @return
-     */
-//    @PostMapping("uploadFile")
-//    public String uploadFile(@RequestParam("file") MultipartFile file,
-//                             ModelMap modelMap,
-//                             HttpSession session,
-//                             RedirectAttributes redirectAttributes) {
+//    @PostMapping("uploadChunkFile")
+//    public String uploadChunkFile(@RequestParam("file") MultipartFile chunk,
+//                                  @RequestParam("fileName") String fileName,
+//                                  @RequestParam("index") int index,
+//                                  @RequestParam("fileHash") String fileHash,
+//                                  @RequestParam("chunkHash") String clientChunkHash,
+//                                  @RequestParam("totalChunks") int totalChunks,
+//                                  @RequestParam("parentFolderName") String folderName,
+//                                  ModelMap modelMap,
+//                                  HttpSession session,
+//                                  RedirectAttributes redirectAttributes) throws NoSuchAlgorithmException, IOException {
 //        User user = (User) session.getAttribute("currentUser");
 //        if (user == null) {
 //            return "redirect:/index";
 //        }
-//        ResponseEntity responseEntity = handleUploadFile(file, session, fileMapper);
+//        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName,
+//                                                        index, fileHash, clientChunkHash, totalChunks, folderName,
+//                                                        chunkMapper, fileMapper, fileChunkMapper, folderMapper);
 //        modelMap.put("uploadMessage", responseEntity.getBody());
 //        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
 //        return "redirect:/user/homepage";
 //    }
 
-    @PostMapping("uploadChunkFile")
-    public String uploadChunkFile(@RequestParam("file") MultipartFile chunk,
-                                  @RequestParam("fileName") String fileName,
-                                  @RequestParam("index") int index,
-                                  @RequestParam("fileHash") String fileHash,
-                                  @RequestParam("chunkHash") String clientChunkHash,
-                                  @RequestParam("totalChunks") int totalChunks,
-                                  @RequestParam("parentFolderName") String folderName,
-                                  ModelMap modelMap,
-                                  HttpSession session,
-                                  RedirectAttributes redirectAttributes) throws NoSuchAlgorithmException, IOException {
+
+    @PostMapping("uploadChunk")
+    public String uploadChunk(@RequestParam("chunk") MultipartFile chunk,
+                                              @RequestParam("fileId") Integer fileId,
+                                              @RequestParam("parentFolderId") String parentFolderId,
+                                              @RequestParam("chunkIndex") Integer chunkIndex,
+                                              @RequestParam("chunkHash") String chunkHash,
+                                              @RequestParam("totalChunks") Integer totalChunks,
+                                              HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         if (user == null) {
             return "redirect:/index";
         }
-        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName,
-                                                        index, fileHash, clientChunkHash, totalChunks, folderName,
-                                                        chunkMapper, fileMapper, folderMapper);
-        modelMap.put("uploadMessage", responseEntity.getBody());
-        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
-        return "redirect:/user/homepage";
-    }
-
-    @GetMapping("download/{fileName:.+}")
-    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException, UnsupportedEncodingException {
-        User user = (User) session.getAttribute("currentUser");
-        return handleDownloadFile(fileName, user, fileMapper, chunkMapper);
-    }
-
-    @GetMapping("deleteFile/{fileName:.+}")
-    public String deleteFile(@PathVariable String fileName, HttpSession session, ModelMap modelMap) throws IOException {
-        User user = (User) session.getAttribute("currentUser");
-        int deleteResult = handleDeleteFileByName(fileName, user, fileMapper, chunkMapper);
-        if (deleteResult == 1) {
-            modelMap.put("deleteMessage", fileName + " delete success!");
+        if (parentFolderId.equals("null")) {
+            handleChunks(chunk, fileId, null, chunkIndex, chunkHash, totalChunks, user, fileMapper, chunkMapper, fileChunkMapper);
         } else {
-            modelMap.put("deleteMessage", fileName + " delete fail");
+            handleChunks(chunk, fileId, Integer.parseInt(parentFolderId), chunkIndex, chunkHash, totalChunks, user, fileMapper, chunkMapper, fileChunkMapper);
         }
-        return "redirect:/user/homepage";
+
+        String redirectUrl = "redirect:/user/homepage";
+        if (parentFolderId != null) {
+            redirectUrl += "/" + parentFolderId;
+        }
+        return redirectUrl;
     }
+
+    /**
+     * 进行文件上传初始化操作,返回该文件的id值
+     * @param fileName
+     * @param fileHash
+     * @param totalChunks
+     * @param parentFolderId
+     * @return
+     */
+    @PostMapping("initializeFileUpload")
+    public ResponseEntity<String> initializeFileUpload(@RequestParam String fileName,
+                                        @RequestParam String fileHash,
+                                        @RequestParam Integer totalChunks,
+                                        @RequestParam(value = "parentFolderId", required = false) Integer parentFolderId,
+                                        HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        Integer fileId = initializeUpload(fileName, fileHash, totalChunks, user, parentFolderId, fileMapper);
+        if (fileId != null) {
+            return ResponseEntity.ok().body(fileId.toString());
+        }
+        return ResponseEntity.internalServerError().body("服务端文件初始化操作失败");
+    }
+
+    /**
+     * 判断分片是否已经在服务端存储,如果分片存在需要增加该分片的引用次数
+     * @param chunkHash
+     * @return
+     */
+    @PostMapping("checkChunkExist")
+    public ResponseEntity<String> checkChunkExist(@RequestParam("chunkHash") String chunkHash,
+                                                  @RequestParam("fileId") Integer fileId,
+                                                  @RequestParam("chunkIndex") Integer chunkIndex) {
+        Boolean exists = checkChunkHashIfExists(chunkHash, fileId, chunkIndex, chunkMapper, fileChunkMapper);
+        return ResponseEntity.ok(exists ? "true": "false");
+    }
+
+//    @GetMapping("download/{fileName:.+}")
+//    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException, UnsupportedEncodingException {
+//        User user = (User) session.getAttribute("currentUser");
+//        return handleDownloadFile(fileName, user, fileMapper, chunkMapper);
+//    }
+
+//    @GetMapping("deleteFile/{fileName:.+}")
+//    public String deleteFile(@PathVariable String fileName, HttpSession session, ModelMap modelMap) throws IOException {
+//        User user = (User) session.getAttribute("currentUser");
+//        int deleteResult = handleDeleteFileByName(fileName, user, fileMapper, chunkMapper);
+//        if (deleteResult == 1) {
+//            modelMap.put("deleteMessage", fileName + " delete success!");
+//        } else {
+//            modelMap.put("deleteMessage", fileName + " delete fail");
+//        }
+//        return "redirect:/user/homepage";
+//    }
 
     /**
      * 创建文件夹
@@ -200,11 +227,11 @@ public class UserManipulateController {
      */
     @PostMapping("createFolder")
     public ResponseEntity<String> createFolder(@RequestParam String folderName,
-                                               @RequestParam String parentFolderName,
+                                               @RequestParam Integer parentFolderId,
                                                HttpSession session,
                                                ModelMap modelMap) {
         User user = (User) session.getAttribute("currentUser");
-        return handleCreateFolder(folderName, parentFolderName, user, folderMapper);
+        return handleCreateFolder(folderName, parentFolderId, user, folderMapper);
     }
 
 }

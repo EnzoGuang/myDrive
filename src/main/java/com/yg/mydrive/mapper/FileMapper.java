@@ -2,6 +2,7 @@ package com.yg.mydrive.mapper;
 
 import com.yg.mydrive.entity.Files;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -9,30 +10,12 @@ import java.util.List;
 @Mapper
 public interface FileMapper {
 
-    // 在根目录下将文件加入表中
-    int insertFile(Files file);
-
-    // 在子目录下将文件加入表中
-    int insertFileToSubFolder(Files file);
-
-    int findIdByFileHash(@Param("fileHash") String fileHash);
-
+    // 通过用户id和父文件id该查找该路径下所有文件
     List<Files> findFileByUserIdAndFolderId(@Param("userId") int userId, @Param("folderId") Integer folderId);
 
-    String getHashOfFileByUserIdAndFileName(@Param("userId") Integer userId, @Param("fileName") String fileName);
+    // 初始化文件记录,并返回文件id值 ;
+    int initializeFile(@Param("file") Files file);
 
-    int deleteFileByFileName(@Param("userId") Integer userId, @Param("fileName") String fileName);
-
-    // 通过文件名和用户id查找文件的hash值
-    String getFileHashByFileNameAndUserId(@Param("fileName") String fileName, @Param("userId") Integer userId);
-
-    // 通过文件名和用户id获得文件的id值
-    Integer getFileIdByFileNameAndUserId(@Param("fileName") String fileName, @Param("userId") Integer userId);
-
-    // 通过文件名和用户id删除该文件记录
-    int deleteFileByFileNameAndUserId(@Param("fileName") String fileName, @Param("userId") Integer userId);
-
-
-    // 通过fileId更新文件大小
-    int updateFileSizeByFileId(@Param("fileId") int fileId, @Param("fileSize") long fileSize);
+    // 根据文件id,更新该文件的大小
+    Integer updateFileSize(@Param("fileId") Integer fileId, @Param("fileSize") Long fileSize);
 }

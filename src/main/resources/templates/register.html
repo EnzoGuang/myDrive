@@ -1,45 +1,43 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Register</title>
-    <link th:href="@{/icon/mydrive.png}" rel="icon">
-    <link th:href="@{/layui/css/layui.css}" rel="stylesheet">
-    <link href="//unpkg.com/layui@2.9.2/dist/css/layui.css" rel="stylesheet">
-    <link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
-</head>
-<body>
-    <div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
-    这是Register界面
-    <form action="registerSave" method="post" class="layui-form">
-        <div class="layui-form-item">
-			<div class="layui-input-group">
-				<div class="layui-input-split layui-input-prefix">
-					输入邮箱
+	<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+		<!-- 引入项目图标 -->
+		<link th:href="@{/icon/mydrive.png}" rel="icon">
+		<!-- 引入layui -->
+		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
+		<!-- 引入bootstrap -->
+		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+	</head>
+	<body>
+		<div class="container mt-5">
+			<div class="row">
+				<div class="col-md-6 offset-md-3">
+					<h2 class="mb-3">Register</h2>
+					<!-- 注册表单 -->
+					<form action="registerSave" method="post">
+						<!-- 输入邮箱 -->
+						<div class="form-group">
+							<label for="email">邮箱</label>
+							<input type="text" class="form-control" id="email" name="email" placeholder="请输入邮箱" required>
+						</div>
+						<!-- 输入密码  -->
+						<div class="form-group">
+							<label for="password">密码</label>
+							<input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
+						</div>
+						<!-- 输入用户名 -->
+						<div class="form-group">
+							<label for="userName">用户名</label>
+							<input type="text" class="form-control" id="userName" name="userName" placeholder="请输入用户名" required>
+						</div>
+						<button type="submit" class="btn btn-primary btn-lg">注册</button>
+						<button type="reset" class="btn btn-danger btn-lg">重置</button>
+						<a href="index" class="btn btn-link">返回首页</a>
+					</form>
 				</div>
-				<input type="text" name="email" placeholder="请输入邮箱" class="layui-input">
 			</div>
-            <br>
-            <div class="layui-input-group">
-                <div class="layui-input-split layui-input-prefix">
-                    输入密码
-                </div>
-                <input type="password" name="password" placeholder="请输入密码" class="layui-input">
-            </div>
-            <br>
-			<div class="layui-input-group">
-				<div class="layui-input-split layui-input-prefix">
-					输入用户名
-				</div>
-				<input type="text" name="userName" placeholder="请输入用户名" class="layui-input">
-			</div>
-			<br>
-            <div class="layui-btn-container">
-                <button type="submit" class="btn btn-lg btn-primary">注册</button>
-                <button type="reset" class="layui-btn layui-btn-lg layui-btn-danger">重置</button>
-            </div>
-        </div>
-    </form>
-	<a href="index" class="layui-btn">返回首页</a>
-</body>
+		</div>
+	</body>
 </html>

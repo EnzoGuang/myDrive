@@ -30,7 +30,7 @@
 
 			<ul th:each="folder : ${foldersList}" class="list-group rounded-1">
 				<li class="list-group-item rounded-1">
-					<a th:href="@{/user/homepage/{folderName}(folderName=${folder.getFolderName()})}" class="d-flex justify-content-between align-items-center text-dark text-decoration-none">
+					<a th:href="@{/user/homepage/{folderId}(folderId=${folder.getFolderId()})}" class="d-flex justify-content-between align-items-center text-dark text-decoration-none">
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/icons8-folder.svg}" alt="folder" class="img-fluid mr-2">
 							<span th:text="${folder.getFolderName()}">Folder Name</span>
@@ -41,25 +41,6 @@
 			</ul>
 
 		</div>
-
-		<!-- 用户点击想要进入的文件夹调用该函数 -->
-		<script>
-			function loadFolderContents(folderName) {
-				const encodeFolderName = encodeURIComponent(folderName);
-
-				fetch(`/user/homepage/${encodeFolderName}`)
-					.then(response => {
-						if (!response.ok) {
-							throw new Error("get Folder error");
-						}
-						return response.text();
-					})
-					.catch(error => {
-						console.log('加载' + folderName + '目录内容失败', error);
-						alert('加载' + folderName + '目录内容失败');
-					});
-			}
-		</script>
 
 		<br><br>
 
@@ -94,25 +75,19 @@
 		<!-- 处理创建文件夹js函数,和模态对话框 -->
 		<script>
 			function createFolder() {
-				// 获得当前path的最后一个路径段
-				var lastPathSegment = getLastPathSegment();
-				var parentFolderName;
-
-				// 如果当前路径为homepage,即当前用户在根目录下
-				if (lastPathSegment === "homepage") {
-					parentFolderName = "null";
-				} else {
-					parentFolderName = lastPathSegment.toString();
-				}
-				console.log('进入函数')
+				console.log('进入创建文件夹函数')
 				var folderName = document.getElementById('folderNameInput').value.trim();
 				if (folderName) {
 					// 构建FormData对象
 					var formData = new FormData();
+
+					// 获得当前目录的folderId
+					var parentFolderId = getCurrentFolderIdFromUrl();
+
 					// 添加新建文件夹的名字
 					formData.append('folderName', folderName);
-					// 添加父文件夹名
-					formData.append('parentFolderName', parentFolderName);
+					// 添加父文件夹id
+					formData.append('parentFolderId', parentFolderId);
 
 					// 发送AJAX请求到后端
 					fetch('/user/createFolder', {
@@ -142,10 +117,13 @@
 				}
 			}
 
-			// 获得当前url的最后一个路径段
-			function getLastPathSegment() {
+			// 获得当前所在目录的folderId, 根目录folderId为null
+			function getCurrentFolderIdFromUrl() {
 				var pathArray = window.location.pathname.split('/');
-				var lastSegment = pathArray.pop();
+				var lastSegment = pathArray.pop()
+				if (lastSegment === 'homepage') {
+					return null;
+				}
 				return lastSegment;
 			}
 		</script>
@@ -198,16 +176,8 @@
 		<script th:inline="javascript">
 			let selectedFile; // 用于存储选中的文件
 
-			// 获得当前path的最后一个路径段
-			var lastPathSegment = getLastPathSegment();
-			var parentFolderName;
-
-			// 如果当前路径为homepage,即当前用户在根目录下
-			if (lastPathSegment === "homepage") {
-				parentFolderName = "null";
-			} else {
-				parentFolderName = lastPathSegment.toString();
-			}
+			// 获得当前父目录的id
+			var parentFolderId = getCurrentFolderIdFromUrl()
 
 			// 监听文件选择变化
 			document.getElementById('fileInput').addEventListener('change', (event) => {
@@ -225,28 +195,41 @@
 					const totalChunks = Math.ceil(selectedFile.size / chunkSize);
 					let uploadSuccess = true; // 追踪文件上传是否成功
 
+					// 进行文件初始化设置
+					const fileId = await initializeFileUpload(selectedFile.name, fileHash, totalChunks, parentFolderId);
+					console.log('文件id是' + fileId);
+
 					for (let i = 0; i < totalChunks; i++) {
 						const chunk = selectedFile.slice(i * chunkSize, (i + 1) * chunkSize);
 						const chunkHash = await calculateHash(chunk)
 						console.log(`Chunk ${i}: Hash: ${chunkHash}`);
 
+						// 检查分片是否需要上传,如果服务端存储该分片则不用上传
+						const chunkExist = await checkChunkExist(chunkHash, fileId, i);
+						if (chunkExist) {
+							console.log(`Chunk ${i} already exists, skipping upload.`);
+							updateProgress(i + 1, totalChunks);
+							continue;
+						}
+
+						// TODO 数据库修改该上传逻辑需要修改
 						const formData = new FormData();
-						formData.append('fileName', selectedFile.name);
-						formData.append('file', chunk);
-						formData.append('index', i);
-						formData.append('fileHash', fileHash);
+
+						formData.append('chunk', chunk);
+						formData.append('fileId', fileId);
+						formData.append('parentFolderId', parentFolderId);
+						formData.append('chunkIndex', i);
 						formData.append('chunkHash', chunkHash);
-						formData.append("totalChunks", totalChunks);
-						formData.append("parentFolderName", parentFolderName);
+						formData.append('totalChunks', totalChunks);
 
 						try {
-							const response = await fetch('http://localhost:8080/user/uploadChunkFile', {
+							const response = await fetch('/user/uploadChunk', {
 								method: 'POST',
 								body: formData
 							});
-							if (!response.ok) {
-								throw new Error('Upload chunk' + i + ' fail');
-							}
+							// if (!response.ok) {
+							// 	throw new Error('Upload chunk' + i + ' fail');
+							// }
 							//更新进度条
 							updateProgress(i + 1, totalChunks);
 						} catch (error) {
@@ -266,6 +249,53 @@
 				}
 			})
 
+			// 文件上传初始化操作
+			async function initializeFileUpload(fileName, fileHash, totalChunks, parentFolderId) {
+				const formData = new FormData();
+				formData.append('fileName', fileName);
+				formData.append('fileHash', fileHash);
+				formData.append('totalChunks', totalChunks);
+				if (parentFolderId != null) {
+					formData.append('parentFolderId', parentFolderId);
+				}
+				try {
+					const response = await fetch('/user/initializeFileUpload', {
+						method: 'POST',
+						body: formData
+					});
+
+					if (!response.ok) {
+						throw new Error('Failed to initialize file upload' + await response.text());
+					}
+
+					// 获得response的内容
+					const fileId = await response.text();
+					console.log('initialize function fileId: ' + fileId);
+					return parseInt(fileId, 10);
+				} catch (error) {
+					console.log('Initialization error: ', error);
+					alert('文件初始化操作失败');
+				}
+			}
+
+			// 判断服务器端是否已经存储了该分片
+			async function checkChunkExist(chunkHash, fileId, chunkIndex) {
+				const formData = new FormData();
+				formData.append('chunkHash', chunkHash);
+				formData.append('fileId', fileId);
+				formData.append('chunkIndex', chunkIndex);
+
+				// 发送POST请求给服务端
+				const response = await fetch('/user/checkChunkExist', {
+					method: 'POST',
+					body: formData
+				})
+				const result = await response.text();
+				console.log('checkChunkExist function: current chunkHash' + chunkHash + ' fileId' + fileId + ' index' + chunkIndex);
+				return result.toLowerCase() === 'true';
+			}
+
+			// 计算hash
 			async function calculateHash(file) {
 				// 读取文件内容
 				const arrayBuffer = await file.arrayBuffer();
@@ -298,6 +328,16 @@
 			function getLastPathSegment() {
 				var pathArray = window.location.pathname.split('/');
 				var lastSegment = pathArray.pop();
+				return lastSegment;
+			}
+
+			// 获得当前所在目录的folderId, 根目录folderId为null
+			function getCurrentFolderIdFromUrl() {
+				var pathArray = window.location.pathname.split('/');
+				var lastSegment = pathArray.pop()
+				if (lastSegment === 'homepage') {
+					return null;
+				}
 				return lastSegment;
 			}
 		</script>

@@ -1,14 +1,16 @@
 package com.yg.mydrive.entity;
 
 public class Files {
-    private int fileId;
-    private String fileName;
-    private String fileHash;
-    private long fileSize;
-    private int totalChunks;
-    private Integer folderId;
-    private Integer userId;
-    private String uploadTime;
+    public int fileId;
+    public String fileName;
+    public String fileHash;
+    public long fileSize;
+    public int totalChunks;
+    public Integer folderId;
+    public Integer userId;
+    public Boolean versionControlEnabled;
+    public Integer currentVersionId;
+    public String uploadTime;
 
     public Files(String fileName, String fileHash, int totalChunks, Integer folderId, Integer userId, String uploadTime) {
         this.fileName = fileName;
@@ -67,16 +69,16 @@ public class Files {
         return fileHash;
     }
 
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
+    }
+
     public long getFileSize() {
         return fileSize;
     }
 
     public void setFileSize(long fileSize) {
         this.fileSize = fileSize;
-    }
-
-    public void setFileHash(String fileHash) {
-        this.fileHash = fileHash;
     }
 
     public int getTotalChunks() {
@@ -91,7 +93,7 @@ public class Files {
         return folderId;
     }
 
-    public void setFolderId(int folderId) {
+    public void setFolderId(Integer folderId) {
         this.folderId = folderId;
     }
 
@@ -99,10 +101,25 @@ public class Files {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(Integer userId) {
         this.userId = userId;
     }
 
+    public Boolean getVersionControlEnabled() {
+        return versionControlEnabled;
+    }
+
+    public void setVersionControlEnabled(Boolean versionControlEnabled) {
+        this.versionControlEnabled = versionControlEnabled;
+    }
+
+    public Integer getCurrentVersionId() {
+        return currentVersionId;
+    }
+
+    public void setCurrentVersionId(Integer currentVersionId) {
+        this.currentVersionId = currentVersionId;
+    }
 
     public String getUploadTime() {
         return uploadTime;
