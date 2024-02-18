@@ -9,6 +9,8 @@
 		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
 		<!-- 引入bootstrap -->
 		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+		<!-- 引入Font Awesome图标库 -->
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
 
 	</head>
 	<body>
@@ -18,7 +20,7 @@
 <!--		<div th:insert="~{common :: currentUserInfo}"></div>-->
 
 		<!-- 显示用户所有文件夹 -->
-		<div class="round-1">
+		<div class="container-fluid round-1">
 			<div class="d-flex justify-content-lg-start align-items-center mb-2">
 				<p class="p-1 mb-0">文件夹</p>
 
@@ -45,7 +47,7 @@
 		<br><br>
 
 		<!-- 模态框 -->
-		<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
+		<div class="container-fluid modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
 			<div class="modal-dialog" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -129,11 +131,21 @@
 		</script>
 
 		<!-- 显示当前用户的所有文件 -->
-		<div class="round-1">
+		<div class="container-fluid mt-4 round-1">
 			<p class="p-1 ">文件</p>
 			<ul th:each="file : ${filesList}" class="list-group rounded-1">
 				<li class="list-group-item rounded-1">
 					<div class="d-flex justify-content-between align-items-center">
+						<!-- 下拉菜单 -->
+<!--						<div class="dropdown m-lg-3">-->
+<!--							<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
+<!--								<i class="fas fa-ellipsis-v"></i>-->
+<!--							</button>-->
+<!--							<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">-->
+<!--								<a class="dropdown-item" th:href="@{/user/download/{fileName}(fileName=${file.getFileName()})}">下载</a>-->
+<!--								<a class="dropdown-item" th:href="@{/user/deleteFile/{fileName}(fileName=${file.getFileName()})}">删除</a>-->
+<!--							</div>-->
+<!--						</div>-->
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
 							<span>[[${file.getFileName()}]]</span>
@@ -145,8 +157,8 @@
 								<span th:if="${file.getFileSize() >= 1024 * 1024 and file.getFileSize() < 1024.0 * 1024.0 * 1024.0}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0), 1, 2)}]]MB</span>
 								<span th:if="${file.getFileSize() >= 1024 * 1024 * 1024}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0 * 1024.0), 1, 2)}]] GB</span>
 							</span>
-							<a th:href="@{/user/download/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-primary me-2">下载</a>
-							<a th:href="@{/user/deleteFile/{fileName} (fileName=${file.getFileName()})}" class="btn btn-sm btn-danger me-1">删除</a>
+							<a th:href="@{/user/download/{fileId} (fileId=${file.getFileId()})}" class="btn btn-sm btn-primary me-2">下载</a>
+							<a th:href="@{/user/deleteFile/{fileId} (fileId=${file.getFileId()})}" class="btn btn-sm btn-danger me-1">删除</a>
 						</div>
 					</div>
 				</li>
@@ -154,7 +166,7 @@
 		</div>
 
 		<!-- 进行文件上传 -->
-		<div class="container my-4">
+		<div class="container-fluid my-4">
 			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data" class="upload-form">
 				<div class="mb-3">
 					<label for="fileInput" class="form-label" >请选择文件</label>
@@ -212,7 +224,6 @@
 							continue;
 						}
 
-						// TODO 数据库修改该上传逻辑需要修改
 						const formData = new FormData();
 
 						formData.append('chunk', chunk);
@@ -240,6 +251,9 @@
 						}
 					}
 					if (uploadSuccess) {
+						// 更新文件大小
+						const fileSize = updateFileSize(fileId);
+						console.log('文件大小是: ' + fileSize);
 						// 如果所有分片都成功上传，则刷新页面
 						window.location.reload();
 					}
@@ -308,6 +322,21 @@
 				const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
 				return hashHex;
+			}
+
+			// 文件所有分片上传完成后调用该函数,更新文件的大小
+			async function updateFileSize(fileId) {
+				const formData = new FormData();
+
+				formData.append('fileId', fileId);
+				console.log('进入更新文件大小函数');
+
+				const response = await fetch('/user/updateFileSize', {
+					method: 'POST',
+					body: formData
+				});
+				console.log('文件大小是: ' + await response.text());
+				return response.text()
 			}
 
 			// 更新进度条

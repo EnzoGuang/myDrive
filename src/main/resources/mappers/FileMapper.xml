@@ -33,5 +33,21 @@
         update file set file_size = #{fileSize} where id = #{fileId};
     </update>
 
+    <!-- 查找文件通过文件id -->
+    <select id="getFileById" resultType="com.yg.mydrive.entity.Files">
+        select id fileId,
+            file_name fileName,
+            file_hash fileHash,
+            file_size fileSize,
+            total_chunks totalChunks,
+            folder_id folderId,
+            user_id userId,
+            version_control_enabled versionControlEnabled,
+            current_version_id currentVersionId,
+            upload_time uploadTime
+        from file
+        where id = #{fileId}
+    </select>
+
 
 </mapper>

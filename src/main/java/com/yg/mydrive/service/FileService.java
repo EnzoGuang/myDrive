@@ -5,16 +5,22 @@ import com.yg.mydrive.mapper.ChunkMapper;
 import com.yg.mydrive.mapper.FileChunkMapper;
 import com.yg.mydrive.mapper.FileMapper;
 import com.yg.mydrive.mapper.FolderMapper;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,7 +118,7 @@ public class FileService {
      * @param chunkMapper
      * @return
      */
-    public static Boolean checkChunkHashIfExists(String chunkHash, Integer fileId, Integer chunkIndex,
+    public static Integer checkChunkHashIfExists(String chunkHash, Integer fileId, Integer chunkIndex,
                                                  ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
         Integer chunkId = chunkMapper.checkChunkExistsByHash(chunkHash);
         if (chunkId != null) {
@@ -122,9 +128,9 @@ public class FileService {
 
             // 更新file-chunk表
             fileChunkMapper.insertFileChunk(new FileChunk(fileId, chunkId, chunkIndex, getTime()));
-            return true;
+            return chunkId;
         }
-        return false;
+        return null;
     }
 
     /**
@@ -167,9 +173,9 @@ public class FileService {
      * @param chunkHash
      * @return
      */
-    private static File getDirPathOfChunkToDownloadOrDelete(String chunkHash) {
+    private static Path getDirPathOfChunkToDownloadOrDelete(String chunkHash) {
         File chunkDir = Utils.join(getUploadDir(), chunkHash.substring(0, 2));
-        return Utils.join(chunkDir, chunkHash.substring(2));
+        return Utils.join(chunkDir, chunkHash.substring(2)).toPath();
     }
 
     /**
@@ -208,90 +214,104 @@ public class FileService {
         return resultTime;
     }
 
-    /**
-     * 下载文件
-     * @param fileName
-     * @param user
-     * @param fileMapper
-     * @param chunkMapper
-     * @return
-     * @throws UnsupportedEncodingException
-     */
-//    public static ResponseEntity<StreamingResponseBody> handleDownloadFile(String fileName,
-//                                                                           User user,
-//                                                                           FileMapper fileMapper,
-//                                                                           ChunkMapper chunkMapper) throws UnsupportedEncodingException {
-//        // 获得所有分片的路径
-//        List<Path> chunkPaths = getChunkPaths(fileName, user, fileMapper, chunkMapper);
-//
-//        StreamingResponseBody responseBody = outputStream -> {
-//            for (Path chunkPath: chunkPaths) {
-//                if (java.nio.file.Files.exists(chunkPath)) {
-//                    try (InputStream inputStream = new BufferedInputStream(java.nio.file.Files.newInputStream(chunkPath))) {
-//
-//                        // 设置缓冲区1MB
-//                        byte[] buffer = new byte[1024 * 1024];
-//
-//                        int length;
-//                        while ((length = inputStream.read(buffer)) != -1) {
-//                            outputStream.write(buffer, 0, length);
-//                        }
-//                    } catch (IOException e) {
-//                        System.out.println(e + "合并分片出错");
-//                    }
-//                }
-//            }
-//        };
-//
-//        HttpHeaders headers = new HttpHeaders();
-//
-//        // 编码文件名,若文件名含有中文或其他特殊字符不进行编码,文件名会出错
-//        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
-//
-//        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
-//        return ResponseEntity
-//                .ok()
-//                .headers(headers)
-//                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-//                .body(responseBody);
-//    }
+    public static Long updateFileSizeById(Integer fileId, FileMapper fileMapper, ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
+        Files currentFile = fileMapper.getFileById(fileId);
+        if (currentFile.getFileSize() == 0) {
+            List<Integer> allChunksId = fileChunkMapper.getAllChunksId(currentFile.getFileId(), currentFile.getCurrentVersionId());
+            long fileSize = 0;
+            for (Integer chunkId: allChunksId) {
+                fileSize += chunkMapper.getChunkSize(chunkId);
+            }
+            fileMapper.updateFileSize(fileId, fileSize);
+            return fileSize;
+        }
+        return null;
+    }
+
+
+    public static ResponseEntity<StreamingResponseBody> handleDownloadFile(Integer fileId,
+                                                                           User user,
+                                                                           FileMapper fileMapper,
+                                                                           ChunkMapper chunkMapper,
+                                                                           FileChunkMapper fileChunkMapper) throws UnsupportedEncodingException {
+        Files file = fileMapper.getFileById(fileId);
+        // 获得所有分片的路径
+        List<Path> chunkPaths = getChunkPaths(file.getFileId(), file.getCurrentVersionId(), chunkMapper, fileChunkMapper);
+
+        StreamingResponseBody responseBody = outputStream -> {
+            for (Path chunkPath: chunkPaths) {
+                if (java.nio.file.Files.exists(chunkPath)) {
+                    try (InputStream inputStream = new BufferedInputStream(java.nio.file.Files.newInputStream(chunkPath))) {
+
+                        // 设置缓冲区1MB
+                        byte[] buffer = new byte[1024 * 1024];
+
+                        int length;
+                        while ((length = inputStream.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, length);
+                        }
+                    } catch (IOException e) {
+                        System.out.println(e + "合并分片出错");
+                    }
+                }
+            }
+        };
+
+        HttpHeaders headers = new HttpHeaders();
+
+        // 编码文件名,若文件名含有中文或其他特殊字符不进行编码,文件名会出错
+        String encodedFileName = URLEncoder.encode(file.getFileName(), StandardCharsets.UTF_8);
+
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(responseBody);
+    }
 
     /**
      * 获得该文件所有分片的路径,通过index进行排序从小到大
-     * @param fileName 文件名
-     * @param user 当前用户
-     * @param fileMapper
+     * @param fileId
+     * @param versionId
      * @param chunkMapper
+     * @param fileChunkMapper
      * @return
      */
-//    public static List<Path> getChunkPaths(String fileName, User user, FileMapper fileMapper, ChunkMapper chunkMapper) {
-//        String fileHash = fileMapper.getFileHashByFileNameAndUserId(fileName, user.getUserId());
-//        List<Chunk> chunks = chunkMapper.getAllChunksByFileHash(fileHash);
-//        List<Path> chunkPaths = new ArrayList<>();
-//        for (Chunk chunk: chunks) {
-//            chunkPaths.add(getDirPathOfChunkToDownloadOrDelete(chunk.getChunkHash()).toPath());
-//        }
-//        return chunkPaths;
-//    }
+    public static List<Path> getChunkPaths(Integer fileId, Integer versionId, ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
+        // 获得所有的分片的id值, 结果按照分片序号index排列,从小到大
+        List<Integer> chunksId = fileChunkMapper.getAllChunksId(fileId, versionId);
 
-//    /**
-//     * 通过文件名和用户id获得该文件的hash值
-//     * @param fileName
-//     * @param user
-//     * @param fileMapper
-//     * @return
-//     */
+        // 存放所有分片的路径
+        List<Path> chunkPaths = new ArrayList<>();
+
+        for (Integer id: chunksId) {
+            // 通过分片id查找分片hash
+            String chunkHash = chunkMapper.getChunkHashByFileId(id);
+            // 获得路径
+            chunkPaths.add(getDirPathOfChunkToDownloadOrDelete(chunkHash));
+        }
+        return chunkPaths;
+    }
+
+    /**
+     * 通过文件名和用户id获得该文件的hash值
+     * @param fileName
+     * @param user
+     * @param fileMapper
+     * @return
+     */
 //    private static String getFileHash(String fileName, User user, FileMapper fileMapper) {
 //        return fileMapper.getFileHashByFileNameAndUserId(fileName, user.getUserId());
 //    }
-//
-//    /**
-//     * 通过文件名和用户id获得该文件的hash值
-//     * @param fileName
-//     * @param user
-//     * @param fileMapper
-//     * @return
-//     */
+
+    /**
+     * 通过文件名和用户id获得该文件的hash值
+     * @param fileName
+     * @param user
+     * @param fileMapper
+     * @return
+     */
 //    private static Integer getFileId(String fileName, User user, FileMapper fileMapper) {
 //        return fileMapper.getFileIdByFileNameAndUserId(fileName, user.getUserId());
 //    }

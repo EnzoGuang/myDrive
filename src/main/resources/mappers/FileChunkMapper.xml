@@ -6,4 +6,19 @@
     <insert id="insertFileChunk" useGeneratedKeys="true" keyProperty="fileChunk.fileId" keyColumn="id">
         insert into file_chunk values (null, #{fileChunk.fileId}, #{fileChunk.chunkId}, #{fileChunk.chunkIndex}, null, #{fileChunk.uploadTime})
     </insert>
+
+    <!-- 通过文件id和版本id获得所有分片的id,id按照分片的序号从小到大排列 -->
+    <select id="getAllChunksId" resultType="java.lang.Integer">
+        select chunk_id
+        from file_chunk
+        where file_id = #{fileId}
+        <if test="versionId == null">
+            and version_id is null
+        </if>
+        <if test="versionId != null">
+            and version_id = #{versionId}
+        </if>
+        order by chunk_index asc
+    </select>
+
 </mapper>

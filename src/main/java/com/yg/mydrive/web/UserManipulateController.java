@@ -10,7 +10,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
 import javax.servlet.http.HttpSession;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.util.List;
 import static com.yg.mydrive.service.FileService.*;
 
@@ -196,18 +200,24 @@ public class UserManipulateController {
     public ResponseEntity<String> checkChunkExist(@RequestParam("chunkHash") String chunkHash,
                                                   @RequestParam("fileId") Integer fileId,
                                                   @RequestParam("chunkIndex") Integer chunkIndex) {
-        Boolean exists = checkChunkHashIfExists(chunkHash, fileId, chunkIndex, chunkMapper, fileChunkMapper);
-        return ResponseEntity.ok(exists ? "true": "false");
+        Integer chunkId= checkChunkHashIfExists(chunkHash, fileId, chunkIndex, chunkMapper, fileChunkMapper);
+        return ResponseEntity.ok(chunkId != null ? "true": "false");
     }
 
-//    @GetMapping("download/{fileName:.+}")
-//    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable String fileName, HttpSession session) throws MalformedURLException, UnsupportedEncodingException {
-//        User user = (User) session.getAttribute("currentUser");
-//        return handleDownloadFile(fileName, user, fileMapper, chunkMapper);
-//    }
+    @PostMapping("updateFileSize")
+    public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId) {
+        Long size = updateFileSizeById(fileId, fileMapper, chunkMapper, fileChunkMapper);
+        return ResponseEntity.ok().body(size + " ");
+    }
 
-//    @GetMapping("deleteFile/{fileName:.+}")
-//    public String deleteFile(@PathVariable String fileName, HttpSession session, ModelMap modelMap) throws IOException {
+    @GetMapping("download/{fileId}")
+    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable Integer fileId, HttpSession session) throws UnsupportedEncodingException {
+        User user = (User) session.getAttribute("currentUser");
+        return handleDownloadFile(fileId, user, fileMapper, chunkMapper, fileChunkMapper);
+    }
+
+//    @GetMapping("deleteFile/{fileId}")
+//    public String deleteFile(@PathVariable String fileId, HttpSession session, ModelMap modelMap) throws IOException {
 //        User user = (User) session.getAttribute("currentUser");
 //        int deleteResult = handleDeleteFileByName(fileName, user, fileMapper, chunkMapper);
 //        if (deleteResult == 1) {

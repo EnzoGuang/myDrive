@@ -26,4 +26,18 @@
         where chunk_hash = #{chunkHash};
     </update>
 
+    <!-- 根据id值获得分片的hash值 -->
+    <select id="getChunkHashByFileId" resultType="java.lang.String">
+        select chunk_hash
+        from chunk
+        where id = #{chunkId};
+    </select>
+
+    <!-- 根据id值获得分片的大小 -->
+    <select id="getChunkSize" resultType="java.lang.Long">
+        select chunk_size
+        from chunk
+        where id = #{chunkId};
+    </select>
+
 </mapper>

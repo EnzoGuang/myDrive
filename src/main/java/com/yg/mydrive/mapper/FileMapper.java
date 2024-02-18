@@ -18,4 +18,7 @@ public interface FileMapper {
 
     // 根据文件id,更新该文件的大小
     Integer updateFileSize(@Param("fileId") Integer fileId, @Param("fileSize") Long fileSize);
+
+    // 查找文件通过文件id
+    Files getFileById(@Param("fileId") Integer fileId);
 }
