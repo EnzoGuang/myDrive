@@ -18,4 +18,14 @@ public interface FolderMapper {
 
     // 根据目录名查询目录id
     Integer getFolderIdByFolderName(@Param("folderName") String folderName, @Param("userId") Integer userId);
+
+    // 查看当前用户的所有目录
+    List<Folder> getAllFoldersByUserId(@Param("userId") Integer userId);
+
+    // 根据目录id移动文件夹到指定的目录
+    int updateParentFolderId(@Param("folderId") Integer folderId, @Param("targetFolderId") Integer targetFolderId, @Param("userId") Integer userId);
+
+    // 更新目录名
+    int updateFolderNameById(@Param("folderId") Integer folderId, @Param("targetFolderName") String targetFolderName, @Param("userId") Integer userId);
+
 }

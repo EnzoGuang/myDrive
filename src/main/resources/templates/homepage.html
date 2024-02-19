@@ -7,11 +7,10 @@
 		<link th:href="@{/icon/mydrive.png}" rel="icon">
 		<!-- 引入layui -->
 		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
-		<!-- 引入bootstrap -->
+		<!-- 引入bootstrap5 CSS样式-->
 		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
-		<!-- 引入Font Awesome图标库 -->
-		<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
-
+		<!-- 引入bootstrap5 js文件 -->
+		<script src="/bootstrap/js/bootstrap.bundle.js"></script>
 	</head>
 	<body>
 		<!-- 引入header -->
@@ -31,20 +30,28 @@
 			</div>
 
 			<ul th:each="folder : ${foldersList}" class="list-group rounded-1">
-				<li class="list-group-item rounded-1">
+				<li class="list-group-item rounded-1 d-flex justify-content-between align-items-center">
 					<a th:href="@{/user/homepage/{folderId}(folderId=${folder.getFolderId()})}" class="d-flex justify-content-between align-items-center text-dark text-decoration-none">
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/icons8-folder.svg}" alt="folder" class="img-fluid mr-2">
 							<span th:text="${folder.getFolderName()}">Folder Name</span>
-							// TODO 创建删除文件夹按钮
 						</div>
 					</a>
+					<div class="dropdown">
+						<button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							操作
+						</button>
+						<div class="dropdown-menu">
+							<!-- TODO 实现文件夹删除功能 -->
+							<a th:href="@{/user/deleteFolder/{folderId} (folderId=${folder.getFolderId()})}" class="dropdown-item">删除</a>
+							<a href="#" th:data-folder-id="${folder.getFolderId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-folder-id'), 'folder')">重命名</a>
+							<a href="#" th:data-folder-id="${folder.getFolderId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveModal" onclick="prepareMoveModal(this.getAttribute('data-folder-id'), 'folder')">移动</a>
+						</div>
+					</div>
 				</li>
 			</ul>
 
 		</div>
-
-		<br><br>
 
 		<!-- 模态框 -->
 		<div class="container-fluid modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="modelTitleId" aria-hidden="true">
@@ -67,13 +74,8 @@
 			</div>
 		</div>
 
-		<!--		&lt;!&ndash; 引入js &ndash;&gt;-->
-		<!--		<script th:src="@{/jquery/jquery-3.7.1.min.js}"></script>-->
-		<!--		&lt;!&ndash; 引入bootstrap js &ndash;&gt;-->
-		<!--		<script th:src="@{/bootstrap/js/bootstrap.js}"></script>-->
 		<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
 		<!-- 处理创建文件夹js函数,和模态对话框 -->
 		<script>
 			function createFolder() {
@@ -89,7 +91,9 @@
 					// 添加新建文件夹的名字
 					formData.append('folderName', folderName);
 					// 添加父文件夹id
-					formData.append('parentFolderId', parentFolderId);
+					if (parentFolderId !== null) {
+						formData.append('parentFolderId', parentFolderId);
+					}
 
 					// 发送AJAX请求到后端
 					fetch('/user/createFolder', {
@@ -136,45 +140,248 @@
 			<ul th:each="file : ${filesList}" class="list-group rounded-1">
 				<li class="list-group-item rounded-1">
 					<div class="d-flex justify-content-between align-items-center">
-						<!-- 下拉菜单 -->
-<!--						<div class="dropdown m-lg-3">-->
-<!--							<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">-->
-<!--								<i class="fas fa-ellipsis-v"></i>-->
-<!--							</button>-->
-<!--							<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">-->
-<!--								<a class="dropdown-item" th:href="@{/user/download/{fileName}(fileName=${file.getFileName()})}">下载</a>-->
-<!--								<a class="dropdown-item" th:href="@{/user/deleteFile/{fileName}(fileName=${file.getFileName()})}">删除</a>-->
-<!--							</div>-->
-<!--						</div>-->
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
 							<span>[[${file.getFileName()}]]</span>
 						</div>
-						<div>
-							<span class="me-2">
+						<div class="d-flex align-items-center justify-content-end">
+							<div class="me-2">
 								<span th:if="${file.getFileSize() < 1024}">1 KB</span>
 								<span th:if="${file.getFileSize() >= 1024 and file.getFileSize() < 1024.0 * 1024.0 }">[[${#numbers.formatDecimal(file.getFileSize() / 1024.0, 1, 2)}]] KB</span>
 								<span th:if="${file.getFileSize() >= 1024 * 1024 and file.getFileSize() < 1024.0 * 1024.0 * 1024.0}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0), 1, 2)}]]MB</span>
 								<span th:if="${file.getFileSize() >= 1024 * 1024 * 1024}">[[${#numbers.formatDecimal(file.getFileSize() / (1024.0 * 1024.0 * 1024.0), 1, 2)}]] GB</span>
-							</span>
-							<a th:href="@{/user/download/{fileId} (fileId=${file.getFileId()})}" class="btn btn-sm btn-primary me-2">下载</a>
-							<a th:href="@{/user/deleteFile/{fileId} (fileId=${file.getFileId()})}" class="btn btn-sm btn-danger me-1">删除</a>
+							</div>
+							<div class="dropdown">
+								<button class="btn btn-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									操作
+								</button>
+								<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+									<a th:href="@{/user/download/{fileId} (fileId=${file.getFileId()})}" class="dropdown-item">下载</a>
+									<a th:href="@{/user/deleteFile/{fileId} (fileId=${file.getFileId()})}" class="dropdown-item">删除</a>
+									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-file-id'), 'file')">重命名</a>
+									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveModal" onclick="prepareMoveModal(this.getAttribute('data-file-id'), 'file')">移动</a>
+								</div>
+							</div>
 						</div>
 					</div>
 				</li>
 			</ul>
 		</div>
 
+		<!-- 模态框 进行文件重命名 -->
+		<div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="renameModalLabel">重命名</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<form id="renameForm">
+							<div class="mb-3">
+								<label for="newItemName" class="col-form-label">新的名字:</label>
+								<input type="text" class="form-control" id="newItemName">
+								<input type="hidden" id="itemIdForRename" value="">
+								<input type="hidden" id="itemType" value="">
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+						<button type="button" class="btn btn-primary" id="submitRename">保存更改</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 重命名文件或文件夹 js -->
+		<script>
+			let itemType = null; // 'file' 或 'folder'
+			// 设置当前要重命名的文件ID
+			function setItemIdForRename(itemId, type) {
+				document.getElementById('itemIdForRename').value = itemId;
+				itemType = type;
+			}
+
+			// 监听保存更改按钮的点击事件
+			document.getElementById('submitRename').addEventListener('click', function() {
+				const itemId = document.getElementById('itemIdForRename').value;
+				const newItemName = document.getElementById('newItemName').value;
+
+				const formData = new FormData();
+
+				formData.append('itemId', itemId);
+				formData.append('newItemName', newItemName);
+				formData.append('itemType', itemType);
+
+				// 发送请求到服务器以更新文件名
+				fetch(`/user/renameItem/`, {
+					method: 'POST',
+					body: formData
+				})
+					.then(response => {
+						if (response.ok) {
+							return response.text();
+						} else {
+							return response.text().then(text => {
+								throw new Error(text);
+							})
+						}
+					})
+					.then(data => {
+						console.log('重命名文件Success:', data);
+						// 关闭模态框
+						var renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+						renameModal.hide();
+
+						renameModal.hide();
+						window.location.reload();
+					})
+					.catch((error) => {
+						console.error('Error:', error);
+					});
+			});
+		</script>
+
+		<!-- 模态框 进行移动项目 -->
+		<div class="modal fade" id="moveModal" tabindex="-1" aria-labelledby="moveModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="moveModalLabel">移动项目</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ul id="folderTree" class="list-unstyled">
+							<!-- 文件夹树在这里动态生成 -->
+						</ul>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+						<button type="button" class="btn btn-primary" onclick="moveItem()">移动</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 移动项目 js -->
+		<script>
+			let selectedFolderId = null; // 用户选择的目标文件夹ID
+			let currentItemId = null; // 当前想要移动的项目（文件或文件夹）的ID
+			let currentItemType = null; // 'file' 或 'folder'
+			let folders = []; // 文件夹数据初始化为空数组
+
+			// 获得所有文件夹
+			async function fetchFolders() {
+				try {
+					const response = await fetch('/user/getAllFolders');
+					if (!response.ok) {
+						throw new Error('fetch all folders fail.');
+					}
+					return await response.json(); // 直接返回解析后的JSON数据
+				} catch (error) {
+					console.error('Fetching folders failed: ', error);
+				}
+			}
+
+			// 显示文件夹树
+			function displayFolders(folders, parentFolderId = null, containerId = 'folderTree') {
+				let container = document.getElementById(containerId);
+				container.innerHTML = ''; // 清空现有内容
+
+				// 添加一个表示根目录的选项
+				let rootLi = document.createElement('li');
+				rootLi.className = "list-group-item list-group-item-action";
+				let rootA = document.createElement('a');
+				rootA.href = "#";
+				rootA.textContent = "根目录";
+				rootA.onclick = () => {
+					selectedFolderId = null; // 表示根目录
+					displayFolders(folders, null, containerId); // 可以选择刷新列表或关闭模态框等
+					console.log('根目录被点击');
+				};
+				rootLi.appendChild(rootA);
+				container.appendChild(rootLi);
+
+				let filteredFolders = folders.filter(folder => folder.parentFolderId === parentFolderId);
+				filteredFolders.forEach(folder => {
+					let li = document.createElement('li');
+					li.className = "list-group-item list-group-item-action";
+					let a = document.createElement('a');
+
+					a.href = "#";
+					a.textContent = folder.folderName;
+					a.onclick = () => {
+						selectedFolderId = folder.folderId;
+						displayFolders(folders, folder.folderId, containerId);
+					} // 点击进入子文件夹
+					li.appendChild(a);
+					container.appendChild(li);
+				});
+
+			}
+
+			// 准备移动操作
+			async function prepareMoveModal(itemId, itemType) {
+				currentItemId = itemId;
+				currentItemType = itemType;
+				if (folders.length === 0) { // 检查folders数据是否已加载
+					folders = await fetchFolders() || []; // 加载数据，如果失败则fallback为一个空数组
+				}
+				displayFolders(folders); // 使用加载后的数据显示文件夹
+			}
+
+			// 执行移动操作
+			function moveItem() {
+				if (selectedFolderId !== null || selectedFolderId === null) {
+					console.log(`将 ${currentItemType} ${currentItemId} 移动到文件夹 ${selectedFolderId}`);
+
+					// 准备请求的数据
+					const formData = new FormData();
+					formData.append('itemId', currentItemId);
+					formData.append('itemType', currentItemType);
+					if (selectedFolderId !== null) {
+						formData.append('targetFolderId', selectedFolderId);
+					}
+
+					// 发送AJAX请求到服务器以执行移动操作
+					fetch('/user/moveItem', {
+						method: 'POST',
+						body: formData
+					}).then(response => {
+						if (response.ok) {
+							return response.text();  // 或者 response.json() 如果后端返回的是JSON
+						} else {
+							throw new Error('Failed to move item.');
+						}
+					}).then(data => {
+						console.log(data); // 处理成功的响应
+						alert('移动成功！');
+						// 关闭模态框、显示消息等操作
+						var moveModal = new bootstrap.Modal(document.getElementById('moveModal'));
+						moveModal.hide();
+					}).catch(error => {
+						console.error('Error moving item:', error);
+						alert('移动失败！');
+					});
+				} else {
+					alert("请选择一个目标文件夹");
+				}
+			}
+		</script>
+
 		<!-- 进行文件上传 -->
 		<div class="container-fluid my-4">
-			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data" class="upload-form">
+			<form id="fileUploadDiv" action="/user/uploadFile" method="post" enctype="multipart/form-data"
+				  class="upload-form">
 				<div class="mb-3">
-					<label for="fileInput" class="form-label" >请选择文件</label>
+					<label for="fileInput" class="form-label">请选择文件</label>
 					<input type="file" class="form-control bg-secondary-subtle" id="fileInput" name="file">
 				</div>
 				<!-- 进度条 -->
 				<div class="progress my-3" style="height: 20px;">
-					<div id="progressBar" class="progress-bar bg-success-subtle" role="progressbar" style="width: 0%;"></div>
+					<div id="progressBar" class="progress-bar bg-success-subtle" role="progressbar"
+						 style="width: 0%;"></div>
 				</div>
 				<!-- 进度信息 -->
 				<div id="progressText" class="progress-text mb-3"></div>

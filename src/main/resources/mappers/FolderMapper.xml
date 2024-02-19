@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FolderMapper">
+
     <!-- 将文件夹插入表 -->
     <insert id="insertFolder">
         insert into folder values (null, #{folderName}, #{parentFolderId}, #{userId}, #{createTime});
@@ -34,4 +35,25 @@
         from folder
         where parent_folder_id is null and user_id = #{userId};
     </select>
+
+    <!-- 查看当前用户的所有目录 -->
+    <select id="getAllFoldersByUserId" resultType="com.yg.mydrive.entity.Folder">
+        select id folderId,
+               folder_name folderName,
+               parent_folder_id parentFolderId,
+               user_id userId,
+               create_time createTime
+        from folder
+        where user_id = #{userId}
+    </select>
+
+    <!-- 根据目录id移动文件夹到指定的目录 -->
+    <update id="updateParentFolderId">
+        update folder set parent_folder_id = #{targetFolderId} where id = #{folderId} and user_id = #{userId}
+    </update>
+
+    <!-- 更新目录名 -->
+    <update id="updateFolderNameById">
+        update folder set folder_name = #{targetFolderName} where id = #{folderId} and user_id = #{userId}
+    </update>
 </mapper>

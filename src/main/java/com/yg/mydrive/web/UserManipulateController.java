@@ -5,6 +5,7 @@ import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -119,31 +120,17 @@ public class UserManipulateController {
         return "homepage";
     }
 
-
-//    @PostMapping("uploadChunkFile")
-//    public String uploadChunkFile(@RequestParam("file") MultipartFile chunk,
-//                                  @RequestParam("fileName") String fileName,
-//                                  @RequestParam("index") int index,
-//                                  @RequestParam("fileHash") String fileHash,
-//                                  @RequestParam("chunkHash") String clientChunkHash,
-//                                  @RequestParam("totalChunks") int totalChunks,
-//                                  @RequestParam("parentFolderName") String folderName,
-//                                  ModelMap modelMap,
-//                                  HttpSession session,
-//                                  RedirectAttributes redirectAttributes) throws NoSuchAlgorithmException, IOException {
-//        User user = (User) session.getAttribute("currentUser");
-//        if (user == null) {
-//            return "redirect:/index";
-//        }
-//        ResponseEntity responseEntity = handleUploadChunkFile(user.getUserId(), chunk, fileName,
-//                                                        index, fileHash, clientChunkHash, totalChunks, folderName,
-//                                                        chunkMapper, fileMapper, fileChunkMapper, folderMapper);
-//        modelMap.put("uploadMessage", responseEntity.getBody());
-//        redirectAttributes.addFlashAttribute("uploadMessage", responseEntity.getBody());
-//        return "redirect:/user/homepage";
-//    }
-
-
+    /**
+     * 上传分片
+     * @param chunk
+     * @param fileId
+     * @param parentFolderId
+     * @param chunkIndex
+     * @param chunkHash
+     * @param totalChunks
+     * @param session
+     * @return
+     */
     @PostMapping("uploadChunk")
     public String uploadChunk(@RequestParam("chunk") MultipartFile chunk,
                                               @RequestParam("fileId") Integer fileId,
@@ -204,12 +191,24 @@ public class UserManipulateController {
         return ResponseEntity.ok(chunkId != null ? "true": "false");
     }
 
+    /**
+     * 更新文件大小
+     * @param fileId
+     * @return
+     */
     @PostMapping("updateFileSize")
     public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId) {
         Long size = updateFileSizeById(fileId, fileMapper, chunkMapper, fileChunkMapper);
         return ResponseEntity.ok().body(size + " ");
     }
 
+    /**
+     * 根据文件id下载文件
+     * @param fileId
+     * @param session
+     * @return
+     * @throws UnsupportedEncodingException
+     */
     @GetMapping("download/{fileId}")
     public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable Integer fileId, HttpSession session) throws UnsupportedEncodingException {
         User user = (User) session.getAttribute("currentUser");
@@ -232,16 +231,60 @@ public class UserManipulateController {
      * 创建文件夹
      * @param folderName
      * @param session
-     * @param modelMap
      * @return
      */
     @PostMapping("createFolder")
     public ResponseEntity<String> createFolder(@RequestParam String folderName,
-                                               @RequestParam Integer parentFolderId,
-                                               HttpSession session,
-                                               ModelMap modelMap) {
+                                               @RequestParam(value = "parentFolderId", required = false) Integer parentFolderId,
+                                               HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         return handleCreateFolder(folderName, parentFolderId, user, folderMapper);
+    }
+
+    /**
+     * 获得当前用户的所有目录
+     * @param session
+     * @return
+     */
+    @GetMapping("getAllFolders")
+    public ResponseEntity<List<Folder>> getAllFolders(HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        List<Folder> folders = folderMapper.getAllFoldersByUserId(user.getUserId());
+        return new ResponseEntity<>(folders, HttpStatus.OK);
+    }
+
+    /**
+     * 对用户文件进行重命名
+     * @param itemId
+     * @param newItemName
+     * @param itemType
+     * @param session
+     * @return
+     */
+    @PostMapping("renameItem")
+    public ResponseEntity<String> renameItem(@RequestParam("itemId") Integer itemId,
+                                             @RequestParam("newItemName") String newItemName,
+                                             @RequestParam("itemType") String itemType,
+                                             HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        return handleRenameItem(itemId, newItemName, itemType, user, fileMapper, folderMapper);
+    }
+
+    /**
+     * 进行项目(文件或文件夹)的移动
+     * @param itemId
+     * @param itemType
+     * @param targetFolderId
+     * @param session
+     * @return
+     */
+    @PostMapping("moveItem")
+    public ResponseEntity<String> moveItem(@RequestParam Integer itemId,
+                                           @RequestParam String itemType,
+                                           @RequestParam(value = "targetFolderId", required = false) Integer targetFolderId,
+                                           HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        return handleMoveItem(itemId, itemType, targetFolderId, user, fileMapper, folderMapper);
     }
 
 }

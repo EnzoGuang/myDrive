@@ -396,4 +396,62 @@ public class FileService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("文件夹创建失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 通过文件id,重命名文件
+      * @param itemId
+     * @param newItemName
+     * @param itemType
+     * @param user
+     * @param fileMapper
+     * @return
+     */
+    public static ResponseEntity<String> handleRenameItem(Integer itemId,
+                                                          String newItemName,
+                                                          String itemType,
+                                                          User user,
+                                                          FileMapper fileMapper,
+                                                          FolderMapper folderMapper) {
+        int result = 0;
+        if (itemType.equals("file")) {
+            result = fileMapper.updateFileNameById(itemId, newItemName, user.getUserId());
+        } else if (itemType.equals("folder")) {
+            result = folderMapper.updateFolderNameById(itemId, newItemName, user.getUserId());
+        }
+
+        if (result != 0) {
+            return ResponseEntity.ok().body("handle rename item success");
+        } else {
+            return ResponseEntity.internalServerError().body("item type error");
+        }
+    }
+
+    /**
+     * 处理移动项目
+     * @param itemType
+     * @param targetFolderId
+     * @param user
+     * @param fileMapper
+     * @param folderMapper
+     * @return
+     */
+    public static ResponseEntity<String> handleMoveItem(Integer itemId,
+                                                        String itemType,
+                                                        Integer targetFolderId,
+                                                        User user,
+                                                        FileMapper fileMapper,
+                                                        FolderMapper folderMapper) {
+        int result = 0;
+        if (itemType.equals("file")) {
+            result = fileMapper.updateParentFolderId(itemId, targetFolderId, user.getUserId());
+        } else if (itemType.equals("folder")) {
+            result = folderMapper.updateParentFolderId(itemId, targetFolderId, user.getUserId());
+        }
+
+        if (result != 0) {
+            return ResponseEntity.ok().body("handle move item success");
+        } else {
+            return ResponseEntity.internalServerError().body("item type error");
+        }
+    }
 }

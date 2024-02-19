@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.yg.mydrive.mapper.FileMapper">
+
     <!-- 通过用户id和父文件id该查找该路径下所有文件 -->
     <select id="findFileByUserIdAndFolderId" resultType="com.yg.mydrive.entity.Files">
         select file_name fileName,
@@ -49,5 +50,13 @@
         where id = #{fileId}
     </select>
 
+    <!-- 更新文件名通过文件id -->
+    <update id="updateFileNameById">
+        update file set file_name = #{newFileName} where user_id = #{userId} and id = #{fileId}
+    </update>
 
+    <!-- 根据目录id移动文件到指定的目录 -->
+    <update id="updateParentFolderId">
+        update file set folder_id = #{targetFolderId} where user_id = #{userId} and id = #{fileId};
+    </update>
 </mapper>

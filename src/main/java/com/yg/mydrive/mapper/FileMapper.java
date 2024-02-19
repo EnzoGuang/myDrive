@@ -2,7 +2,6 @@ package com.yg.mydrive.mapper;
 
 import com.yg.mydrive.entity.Files;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -21,4 +20,11 @@ public interface FileMapper {
 
     // 查找文件通过文件id
     Files getFileById(@Param("fileId") Integer fileId);
+
+    // 更新文件名通过文件id
+    int updateFileNameById(@Param("fileId") Integer fileId, @Param("newFileName") String newFileName, @Param("userId") Integer userId);
+
+    // 根据目录id移动文件到指定的目录
+    int updateParentFolderId(@Param("fileId") Integer fileId, @Param("targetFolderId") Integer targetFolderId, @Param("userId") Integer userId);
+
 }
