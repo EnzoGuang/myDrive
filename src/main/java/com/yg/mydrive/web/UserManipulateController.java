@@ -4,6 +4,7 @@ import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.*;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,10 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import static com.yg.mydrive.service.FileService.*;
 
 
@@ -197,8 +201,9 @@ public class UserManipulateController {
      * @return
      */
     @PostMapping("updateFileSize")
-    public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId) {
-        Long size = updateFileSizeById(fileId, fileMapper, chunkMapper, fileChunkMapper);
+    public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId, HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        Long size = updateFileSizeById(fileId, user.getUserId(), fileMapper, chunkMapper, fileChunkMapper);
         return ResponseEntity.ok().body(size + " ");
     }
 
@@ -285,6 +290,49 @@ public class UserManipulateController {
                                            HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         return handleMoveItem(itemId, itemType, targetFolderId, user, fileMapper, folderMapper);
+    }
+
+    @GetMapping("sharePage")
+    public String shareFile(@RequestParam("data") String data, ModelMap modelMap) {
+        Files file = handleShare(data, fileMapper);
+        modelMap.put("data", data);
+        if (file != null) {
+            modelMap.put("sharingFile", file);
+        } else {
+            modelMap.put("sharingError", "sharing file not exist");
+        }
+        return "share";
+    }
+
+    @PostMapping("sharePageLogin")
+    @ResponseBody
+    public Map<String, String> sharePageLogin(@RequestParam("useremail") String useremail,
+                                              @RequestParam("password") String password,
+                                              @RequestParam(required = false, value ="data") String data,
+                                              HttpSession session) {
+        User user = userMapper.findUserByEmail(useremail);
+
+        Map<String, String> response = new HashMap<>();
+        if (user == null || !user.getPassword().equals(password)) {
+            response.put("status", "error");
+            response.put("message", "Incorrect email or password. Please try again.");
+        } else {
+            // 设置当前用户会话
+            session.setAttribute("currentUser", user);
+            response.put("status", "success");
+        }
+        return response;
+    }
+
+    @GetMapping("generateShareLink/{fileId}")
+    public ResponseEntity<String> generateShareLink(@PathVariable Integer fileId, HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+
+        String data = "fileId:" + fileId + "|" + "userId:" + user.getUserId();
+        String encode = encodeBase64(data);
+        String shareLink = "http://localhost:8080/user/sharePage?data=" + encode;
+        return ResponseEntity.ok().body(shareLink);
+
     }
 
 }

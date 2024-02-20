@@ -11,6 +11,8 @@ public class Files {
     public Boolean versionControlEnabled;
     public Integer currentVersionId;
     public String uploadTime;
+    public String status;
+    public String deleteTime;
 
     public Files(String fileName, String fileHash, int totalChunks, Integer folderId, Integer userId, String uploadTime) {
         this.fileName = fileName;
@@ -127,5 +129,21 @@ public class Files {
 
     public void setUploadTime(String uploadTime) {
         this.uploadTime = uploadTime;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(String deleteTime) {
+        this.deleteTime = deleteTime;
     }
 }

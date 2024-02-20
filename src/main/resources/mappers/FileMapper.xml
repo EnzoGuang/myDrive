@@ -21,6 +21,7 @@
         <if test="folderId != null">
             and folder_id = ${folderId}
         </if>
+        and status = 'active'
     </select>
 
     <!-- 初始化文件记录 -->
@@ -45,9 +46,11 @@
             user_id userId,
             version_control_enabled versionControlEnabled,
             current_version_id currentVersionId,
-            upload_time uploadTime
+            upload_time uploadTime,
+            status,
+            delete_time deleteTime
         from file
-        where id = #{fileId}
+        where id = #{fileId} and status = 'active' and user_id = #{userId}
     </select>
 
     <!-- 更新文件名通过文件id -->

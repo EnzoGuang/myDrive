@@ -4,7 +4,8 @@
 
     <!-- 将文件夹插入表 -->
     <insert id="insertFolder">
-        insert into folder values (null, #{folderName}, #{parentFolderId}, #{userId}, #{createTime});
+        insert into folder(folder_name, parent_folder_id, user_id, create_time)
+        values (#{folderName}, #{parentFolderId}, #{userId}, #{createTime});
     </insert>
 
     <!-- 根据用户当前目录id查询该目录下的所有子目录 -->
@@ -15,14 +16,14 @@
             user_id userId,
             create_time createTime
         from folder
-        where parent_folder_id = #{parentFolderId} and user_id = #{userId};
+        where parent_folder_id = #{parentFolderId} and user_id = #{userId} and status = 'active';
     </select>
 
     <!-- 根据目录名查询目录id -->
     <select id="getFolderIdByFolderName" resultType="java.lang.Integer">
         select id folderId
         from folder
-        where folder_name = #{folderName} and user_id = #{userId};
+        where folder_name = #{folderName} and user_id = #{userId} and status = 'active';
     </select>
 
     <!-- 查看用户根目录下的所有目录 -->
@@ -33,7 +34,7 @@
                user_id userId,
                create_time createTime
         from folder
-        where parent_folder_id is null and user_id = #{userId};
+        where parent_folder_id is null and user_id = #{userId} and status = 'active';
     </select>
 
     <!-- 查看当前用户的所有目录 -->
@@ -44,7 +45,7 @@
                user_id userId,
                create_time createTime
         from folder
-        where user_id = #{userId}
+        where user_id = #{userId} and status = 'active'
     </select>
 
     <!-- 根据目录id移动文件夹到指定的目录 -->

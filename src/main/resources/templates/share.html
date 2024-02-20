@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+		<!-- 引入项目图标 -->
+		<link th:href="@{/icon/mydrive.png}" rel="icon">
+		<!-- 引入layui -->
+		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
+		<!-- 引入bootstrap -->
+		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+		<script src="/bootstrap/js/bootstrap.bundle.js"></script>
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+		<script src="/js/moveItem.js"></script>
+
+
+	</head>
+	<body>
+		<p th:text="${sharingFile.getFileName()}"></p>
+		<div class="container mt-5">
+			<h2>文件分享详情</h2>
+			<div class="alert alert-info" role="alert">
+				<p>文件名: <span th:text="${sharingFile.getFileName()}"></span></p>
+				<p>文件大小: <span th:text="${sharingFile.getFileSize()}"></span></p>
+				<!-- 显示更多文件信息 -->
+			</div>
+			<button id="saveFileBtn" class="btn btn-success" th:attr="data-logged-in=${session.isLoggedIn}">保存文件</button>
+
+		</div>
+
+		<!-- 登录模态框 -->
+		<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="loginModalLabel">登录</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<form id="loginForm">
+							<div class="form-group">
+								<label for="useremail">邮箱</label>
+								<input type="text" class="form-control" id="useremail" placeholder="请输入邮箱" required>
+							</div>
+							<div class="form-group">
+								<label for="password">密码</label>
+								<input type="password" class="form-control" id="password" placeholder="密码" required>
+								<input type="text" th:value="${data}" id="data">
+							</div>
+							<div class="form-group">
+								<button type="submit" class="btn btn-primary">登录</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 文件夹选择模态框 -->
+		<div class="modal fade" id="saveFolderModal" tabindex="-1" aria-labelledby="saveFolderModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="saveFolderModalLabel">选择保存的文件夹</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ul id="folderList" class="list-group">
+							<!-- 文件夹列表将在这里动态生成 -->
+						</ul>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+						<button type="button" class="btn btn-primary" id="saveFileToFolderBtn">保存</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<script>
+			$(document).ready(function() {
+				$("#saveFileBtn").click(function() {
+					var isLoggedIn = $(this).attr("data-logged-in") === 'true';
+					if (!isLoggedIn) {
+						$('#loginModal').modal('show');
+					} else {
+						// 实现保存文件的逻辑
+						console.log("保存文件逻辑");
+					}
+				});
+			});
+
+			// 监听用户登录
+			document.getElementById('loginForm').addEventListener('submit', function(e) {
+
+				e.preventDefault();
+				const useremail = document.getElementById('useremail').value;
+				const password = document.getElementById('password').value;
+				const data = document.getElementById('data').value;
+
+				const formData = new FormData()
+				formData.append("useremail", useremail);
+				formData.append("password", password);
+				formData.append('data', data)
+
+				// 发送AJAX POST请求到后端进行登录
+				fetch('/user/sharePageLogin', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded',
+					},
+					body: new URLSearchParams({
+						'useremail': useremail,
+						'password': password,
+						'data': data
+					})
+				})
+					.then(response => response.json())
+					.then(data => {
+						if (data.status === 'success') {
+							// 登录成功，根据返回的重定向URL跳转
+							alert('登录成功');
+							$('#loginModal').modal('hide');
+							showSaveFolderModal();
+						} else {
+							// 登录失败，显示错误信息
+							alert(data.message);
+						}
+					})
+					.catch(error => console.error('登录失败:', error));
+
+			});
+
+			function showSaveFolderModal() {
+				$('#saveFolderModal').modal('show');
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				// 当文件夹模态框显示时加载文件夹数据
+				$('#saveFolderModal').on('shown.bs.modal', async function () {
+					const folders = await fetchFolders();
+					if (folders) {
+						displayFolders(folders, null, 'folderList');
+					}
+				});
+
+				// 可选：为"保存到选择的文件夹"按钮绑定事件，处理文件保存逻辑
+				document.getElementById('saveFileToFolderBtn').addEventListener('click', function() {
+					if (selectedFolderId !== null) {
+						console.log(`文件将被保存到文件夹ID: ${selectedFolderId}`);
+						// TODO 在这里添加保存文件到选中文件夹的逻辑
+					} else {
+						alert('请选择一个文件夹！');
+					}
+				});
+			});
+
+
+		</script>
+	</body>
+</html>

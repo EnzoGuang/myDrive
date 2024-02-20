@@ -19,6 +19,8 @@ create table file(
     version_control_enabled BOOLEAN DEFAULT FALSE COMMENT '标记文件是否开启版本管理',
     current_version_id INT DEFAULT NULL COMMENT '表示当前使用的版本',
     upload_time DATETIME,
+    status VARCHAR(255) DEFAULT 'active' COMMENT '标识文件状态，active为正常，deleted为已删除进入回收站',
+    delete_time DATETIME DEFAULT NULL COMMENT '记录文件被删除的时间',
     FOREIGN KEY (folder_id) REFERENCES folder(id),
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (current_version_id) REFERENCES file_version(id)
@@ -64,5 +66,7 @@ create table folder(
     parent_folder_id INT DEFAULT NULL,
     user_id INT COMMENT '外键关联user表',
     create_time DATETIME,
+    status VARCHAR(255) DEFAULT 'active' COMMENT '标识文件夹状态，active为正常，deleted为已删除进入回收站',
+    deleted_time DATETIME DEFAULT NULL COMMENT '记录文件夹被删除的时间',
     FOREIGN KEY (user_id) REFERENCES user(id)
 );

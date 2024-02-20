@@ -19,7 +19,7 @@ public interface FileMapper {
     Integer updateFileSize(@Param("fileId") Integer fileId, @Param("fileSize") Long fileSize);
 
     // 查找文件通过文件id
-    Files getFileById(@Param("fileId") Integer fileId);
+    Files getFileById(@Param("fileId") Integer fileId, @Param("userId") Integer userId);
 
     // 更新文件名通过文件id
     int updateFileNameById(@Param("fileId") Integer fileId, @Param("newFileName") String newFileName, @Param("userId") Integer userId);

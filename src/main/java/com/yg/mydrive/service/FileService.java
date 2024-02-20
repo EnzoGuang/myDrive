@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -214,8 +215,8 @@ public class FileService {
         return resultTime;
     }
 
-    public static Long updateFileSizeById(Integer fileId, FileMapper fileMapper, ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
-        Files currentFile = fileMapper.getFileById(fileId);
+    public static Long updateFileSizeById(Integer fileId, Integer userId, FileMapper fileMapper, ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
+        Files currentFile = fileMapper.getFileById(fileId, userId);
         if (currentFile.getFileSize() == 0) {
             List<Integer> allChunksId = fileChunkMapper.getAllChunksId(currentFile.getFileId(), currentFile.getCurrentVersionId());
             long fileSize = 0;
@@ -234,7 +235,7 @@ public class FileService {
                                                                            FileMapper fileMapper,
                                                                            ChunkMapper chunkMapper,
                                                                            FileChunkMapper fileChunkMapper) throws UnsupportedEncodingException {
-        Files file = fileMapper.getFileById(fileId);
+        Files file = fileMapper.getFileById(fileId, user.getUserId());
         // 获得所有分片的路径
         List<Path> chunkPaths = getChunkPaths(file.getFileId(), file.getCurrentVersionId(), chunkMapper, fileChunkMapper);
 
@@ -453,5 +454,40 @@ public class FileService {
         } else {
             return ResponseEntity.internalServerError().body("item type error");
         }
+    }
+
+    /**
+     * 将数据通过Base64编码
+     * @param data
+     * @return
+     */
+    public static String encodeBase64(String data) {
+        return Base64.getEncoder().encodeToString(data.getBytes());
+    }
+
+    /**
+     * 将数据通过Base64解码
+     * @param encodeData
+     * @return
+     */
+    public static String decodeBase64(String encodeData) {
+        byte[] decodeBytes = Base64.getDecoder().decode(encodeData);
+        return new String(decodeBytes);
+    }
+
+    /**
+     * 处理文件分享,根据分享链接包含的fileId返回对应的文件
+     * @param data
+     * @param fileMapper
+     * @return
+     */
+    public static Files handleShare(String data, FileMapper fileMapper) {
+        // 解码分享链接获得相关参数
+        String decodeData = decodeBase64(data);
+        String[] parts = decodeData.split("\\|"); // 格式为"fileId:xxx|userId:xxx"
+        Integer fileId = Integer.parseInt(parts[0].split(":")[1]);
+        Integer userId = Integer.parseInt(parts[1].split(":")[1]);
+
+        return fileMapper.getFileById(fileId, userId);
     }
 }

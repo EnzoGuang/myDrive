@@ -30,7 +30,7 @@
 			</div>
 
 			<ul th:each="folder : ${foldersList}" class="list-group rounded-1">
-				<li class="list-group-item rounded-1 d-flex justify-content-between align-items-center">
+				<li class="list-group-item list-group-item-action list-group-item-warning rounded-1 d-flex justify-content-between align-items-center">
 					<a th:href="@{/user/homepage/{folderId}(folderId=${folder.getFolderId()})}" class="d-flex justify-content-between align-items-center text-dark text-decoration-none">
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/icons8-folder.svg}" alt="folder" class="img-fluid mr-2">
@@ -44,7 +44,7 @@
 						<div class="dropdown-menu">
 							<!-- TODO 实现文件夹删除功能 -->
 							<a th:href="@{/user/deleteFolder/{folderId} (folderId=${folder.getFolderId()})}" class="dropdown-item">删除</a>
-							<a href="#" th:data-folder-id="${folder.getFolderId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-folder-id'), 'folder')">重命名</a>
+							<a href="#" th:data-folder-id="${folder.getFolderId()}" th:data-folder-name="${folder.getFolderName()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-folder-id'), 'folder', this.getAttribute('data-folder-name'))">重命名</a>
 							<a href="#" th:data-folder-id="${folder.getFolderId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveModal" onclick="prepareMoveModal(this.getAttribute('data-folder-id'), 'folder')">移动</a>
 						</div>
 					</div>
@@ -138,7 +138,7 @@
 		<div class="container-fluid mt-4 round-1">
 			<p class="p-1 ">文件</p>
 			<ul th:each="file : ${filesList}" class="list-group rounded-1">
-				<li class="list-group-item rounded-1">
+				<li class="list-group-item list-group-item-action list-group-item-primary rounded-1">
 					<div class="d-flex justify-content-between align-items-center">
 						<div class="d-flex align-items-center">
 							<img th:src="@{/icon/filetype-txt.svg}" alt="file" class="img-fluid mr-1">
@@ -157,9 +157,12 @@
 								</button>
 								<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
 									<a th:href="@{/user/download/{fileId} (fileId=${file.getFileId()})}" class="dropdown-item">下载</a>
+									<a href="#" class="dropdown-divider"></a>
 									<a th:href="@{/user/deleteFile/{fileId} (fileId=${file.getFileId()})}" class="dropdown-item">删除</a>
+									<a href="#" class="dropdown-divider"></a>
 									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-file-id'), 'file')">重命名</a>
 									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveModal" onclick="prepareMoveModal(this.getAttribute('data-file-id'), 'file')">移动</a>
+									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="generateShareLink(this.getAttribute('data-file-id'))">生成分享链接</a>
 								</div>
 							</div>
 						</div>
@@ -197,10 +200,13 @@
 		<!-- 重命名文件或文件夹 js -->
 		<script>
 			let itemType = null; // 'file' 或 'folder'
+			let itemName = null;
 			// 设置当前要重命名的文件ID
-			function setItemIdForRename(itemId, type) {
+			function setItemIdForRename(itemId, type, name) {
+				document.getElementById('newItemName').value = name;
 				document.getElementById('itemIdForRename').value = itemId;
 				itemType = type;
+				itemName = name;
 			}
 
 			// 监听保存更改按钮的点击事件
@@ -243,6 +249,56 @@
 			});
 		</script>
 
+		<!-- 模态框用于生成分享链接 -->
+		<div class="modal fade" id="shareLinkModal" tabindex="-1" aria-labelledby="shareLinkModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="shareLinkModalLabel">分享链接</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<p id="shareLinkText">链接加载中...</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" onclick="copyToClipboard()">复制链接</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 生成分享链接 -->
+		<script>
+
+			// 生成分享链接
+			function generateShareLink(fileId) {
+				// 发送AJAX请求到后端获取分享链接
+				fetch(`/user/generateShareLink/${fileId}`)
+					.then(response => response.text())
+					.then(link => {
+						// 在这里处理生成的分享链接，例如显示给用户或复制到剪贴板
+						document.getElementById('shareLinkText').textContent = link;
+						$('#shareLinkModal').modal('show');
+					})
+					.catch(error => console.error('Error generating share link:', error));
+			}
+
+			// 将链接复制到剪贴板
+			function copyToClipboard() {
+				const linkText = document.getElementById('shareLinkText').textContent;
+				navigator.clipboard.writeText(linkText).then(() => {
+					// 关闭模态框并提示用户
+					$('#shareLinkModal').modal('hide');
+					alert('链接已复制到剪贴板');
+				}).catch(err => {
+					console.error('无法复制链接到剪贴板:', err);
+				});
+			}
+
+		</script>
+
 		<!-- 模态框 进行移动项目 -->
 		<div class="modal fade" id="moveModal" tabindex="-1" aria-labelledby="moveModalLabel" aria-hidden="true">
 			<div class="modal-dialog">
@@ -265,110 +321,7 @@
 		</div>
 
 		<!-- 移动项目 js -->
-		<script>
-			let selectedFolderId = null; // 用户选择的目标文件夹ID
-			let currentItemId = null; // 当前想要移动的项目（文件或文件夹）的ID
-			let currentItemType = null; // 'file' 或 'folder'
-			let folders = []; // 文件夹数据初始化为空数组
-
-			// 获得所有文件夹
-			async function fetchFolders() {
-				try {
-					const response = await fetch('/user/getAllFolders');
-					if (!response.ok) {
-						throw new Error('fetch all folders fail.');
-					}
-					return await response.json(); // 直接返回解析后的JSON数据
-				} catch (error) {
-					console.error('Fetching folders failed: ', error);
-				}
-			}
-
-			// 显示文件夹树
-			function displayFolders(folders, parentFolderId = null, containerId = 'folderTree') {
-				let container = document.getElementById(containerId);
-				container.innerHTML = ''; // 清空现有内容
-
-				// 添加一个表示根目录的选项
-				let rootLi = document.createElement('li');
-				rootLi.className = "list-group-item list-group-item-action";
-				let rootA = document.createElement('a');
-				rootA.href = "#";
-				rootA.textContent = "根目录";
-				rootA.onclick = () => {
-					selectedFolderId = null; // 表示根目录
-					displayFolders(folders, null, containerId); // 可以选择刷新列表或关闭模态框等
-					console.log('根目录被点击');
-				};
-				rootLi.appendChild(rootA);
-				container.appendChild(rootLi);
-
-				let filteredFolders = folders.filter(folder => folder.parentFolderId === parentFolderId);
-				filteredFolders.forEach(folder => {
-					let li = document.createElement('li');
-					li.className = "list-group-item list-group-item-action";
-					let a = document.createElement('a');
-
-					a.href = "#";
-					a.textContent = folder.folderName;
-					a.onclick = () => {
-						selectedFolderId = folder.folderId;
-						displayFolders(folders, folder.folderId, containerId);
-					} // 点击进入子文件夹
-					li.appendChild(a);
-					container.appendChild(li);
-				});
-
-			}
-
-			// 准备移动操作
-			async function prepareMoveModal(itemId, itemType) {
-				currentItemId = itemId;
-				currentItemType = itemType;
-				if (folders.length === 0) { // 检查folders数据是否已加载
-					folders = await fetchFolders() || []; // 加载数据，如果失败则fallback为一个空数组
-				}
-				displayFolders(folders); // 使用加载后的数据显示文件夹
-			}
-
-			// 执行移动操作
-			function moveItem() {
-				if (selectedFolderId !== null || selectedFolderId === null) {
-					console.log(`将 ${currentItemType} ${currentItemId} 移动到文件夹 ${selectedFolderId}`);
-
-					// 准备请求的数据
-					const formData = new FormData();
-					formData.append('itemId', currentItemId);
-					formData.append('itemType', currentItemType);
-					if (selectedFolderId !== null) {
-						formData.append('targetFolderId', selectedFolderId);
-					}
-
-					// 发送AJAX请求到服务器以执行移动操作
-					fetch('/user/moveItem', {
-						method: 'POST',
-						body: formData
-					}).then(response => {
-						if (response.ok) {
-							return response.text();  // 或者 response.json() 如果后端返回的是JSON
-						} else {
-							throw new Error('Failed to move item.');
-						}
-					}).then(data => {
-						console.log(data); // 处理成功的响应
-						alert('移动成功！');
-						// 关闭模态框、显示消息等操作
-						var moveModal = new bootstrap.Modal(document.getElementById('moveModal'));
-						moveModal.hide();
-					}).catch(error => {
-						console.error('Error moving item:', error);
-						alert('移动失败！');
-					});
-				} else {
-					alert("请选择一个目标文件夹");
-				}
-			}
-		</script>
+		<script src="/js/moveItem.js"></script>
 
 		<!-- 进行文件上传 -->
 		<div class="container-fluid my-4">
@@ -380,7 +333,7 @@
 				</div>
 				<!-- 进度条 -->
 				<div class="progress my-3" style="height: 20px;">
-					<div id="progressBar" class="progress-bar bg-success-subtle" role="progressbar"
+					<div id="progressBar" class="progress-bar bg-success" role="progressbar"
 						 style="width: 0%;"></div>
 				</div>
 				<!-- 进度信息 -->

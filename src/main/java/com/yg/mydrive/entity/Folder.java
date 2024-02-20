@@ -6,6 +6,8 @@ public class Folder {
     private Integer parentFolderId;
     private int userId;
     private String createTime;
+    private String status;
+    private String deleteTime;
 
     public Folder() {}
 
@@ -54,5 +56,25 @@ public class Folder {
 
     public void setCreateTime(String createTime) {
         this.createTime = createTime;
+    }
+
+    public void setParentFolderId(Integer parentFolderId) {
+        this.parentFolderId = parentFolderId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getDeleteTime() {
+        return deleteTime;
+    }
+
+    public void setDeleteTime(String deleteTime) {
+        this.deleteTime = deleteTime;
     }
 }
