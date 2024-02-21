@@ -4,7 +4,6 @@ import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.*;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +12,8 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
 import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -292,6 +289,12 @@ public class UserManipulateController {
         return handleMoveItem(itemId, itemType, targetFolderId, user, fileMapper, folderMapper);
     }
 
+    /**
+     * 用户在浏览器输入分享链接,返回分享页面的视图
+     * @param data
+     * @param modelMap
+     * @return
+     */
     @GetMapping("sharePage")
     public String shareFile(@RequestParam("data") String data, ModelMap modelMap) {
         Files file = handleShare(data, fileMapper);
@@ -304,6 +307,14 @@ public class UserManipulateController {
         return "share";
     }
 
+    /**
+     * 在分享页面进行用户登录
+     * @param useremail
+     * @param password
+     * @param data
+     * @param session
+     * @return
+     */
     @PostMapping("sharePageLogin")
     @ResponseBody
     public Map<String, String> sharePageLogin(@RequestParam("useremail") String useremail,
@@ -324,6 +335,34 @@ public class UserManipulateController {
         return response;
     }
 
+    /**
+     * 处理分享文件的保存功能
+     * @param originalFileId
+     * @param folderId
+     * @param session
+     * @return
+     */
+    @PostMapping("saveShareFile")
+    public ResponseEntity<String> saveShareFile(@RequestParam("originalFileId") Integer originalFileId,
+                                                @RequestParam("originalUserId") Integer originalUserId,
+                                                @RequestParam(required = false, value = "folderIdString") String folderIdString,
+                                                HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        Integer folderId;
+        if (folderIdString != null && !folderIdString.equalsIgnoreCase("null")) {
+            folderId = Integer.valueOf(folderIdString);
+        } else {
+            folderId = null;
+        }
+        return handleSaveShareFile(originalFileId, originalUserId, folderId, user, fileMapper, chunkMapper, fileChunkMapper);
+    }
+
+    /**
+     * 生成分享链接
+     * @param fileId
+     * @param session
+     * @return
+     */
     @GetMapping("generateShareLink/{fileId}")
     public ResponseEntity<String> generateShareLink(@PathVariable Integer fileId, HttpSession session) {
         User user = (User) session.getAttribute("currentUser");

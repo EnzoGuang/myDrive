@@ -27,4 +27,7 @@ public interface FileMapper {
     // 根据目录id移动文件到指定的目录
     int updateParentFolderId(@Param("fileId") Integer fileId, @Param("targetFolderId") Integer targetFolderId, @Param("userId") Integer userId);
 
+    // 生成文件分享保存的记录
+    int generateShareFileRecord(@Param("file") Files file);
+
 }

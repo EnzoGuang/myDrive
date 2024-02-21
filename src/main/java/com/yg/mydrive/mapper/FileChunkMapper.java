@@ -16,5 +16,7 @@ public interface FileChunkMapper {
     // 通过文件id和版本id获得所有分片的id
     List<Integer> getAllChunksId(@Param("fileId") Integer fileId, @Param("versionId") Integer versionId);
 
+    // 通过fileId获得所有的FileChunk记录
+    List<FileChunk> getAllFileChunkByFileId(@Param("fileId") Integer fileId);
 
 }

@@ -21,6 +21,9 @@ public interface ChunkMapper {
     // 如果需要上传的分片在服务端已存储,不需要再存储,只需要增加引用次数
     Integer updateReferenceCountByHash(@Param("chunkId") Integer chunkId, @Param("chunkHash") String chunkHash);
 
+    // 根据分片id值更新分片的引用次数
+    Integer updateReferenceCountById(@Param("chunkId") Integer chunkId);
+
     // 根据id值获得分片的hash值
     String getChunkHashByFileId(@Param("chunkId") Integer chunkId);
 

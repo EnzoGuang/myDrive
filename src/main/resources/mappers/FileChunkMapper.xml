@@ -21,4 +21,16 @@
         order by chunk_index asc
     </select>
 
+    <!-- 通过fileId获得所有的FileChunk记录 -->
+    <select id="getAllFileChunkByFileId" resultType="com.yg.mydrive.entity.FileChunk">
+        select id fileChunkId,
+            file_id fileId,
+            chunk_id chunkId,
+            chunk_index chunkIndex,
+            version_id versionId
+        from file_chunk
+        where file_id = #{fileId}
+        order by chunk_index asc
+    </select>
+
 </mapper>

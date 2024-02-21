@@ -26,6 +26,13 @@
         where chunk_hash = #{chunkHash};
     </update>
 
+    <!-- 根据分片id值更新分片的引用次数 -->
+    <update id="updateReferenceCountById">
+        update chunk
+        set reference_count = reference_count + 1
+        where id = #{chunkId}
+    </update>
+
     <!-- 根据id值获得分片的hash值 -->
     <select id="getChunkHashByFileId" resultType="java.lang.String">
         select chunk_hash

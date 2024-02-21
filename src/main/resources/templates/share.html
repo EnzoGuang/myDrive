@@ -77,8 +77,27 @@
 			</div>
 		</div>
 
+		<!-- 成功提示模态框 -->
+		<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="successModalLabel">保存成功</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						文件已成功保存到选定的文件夹。
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-		<script>
+
+
+		<script th:inline="javascript">
 			$(document).ready(function() {
 				$("#saveFileBtn").click(function() {
 					var isLoggedIn = $(this).attr("data-logged-in") === 'true';
@@ -147,15 +166,32 @@
 
 				// 可选：为"保存到选择的文件夹"按钮绑定事件，处理文件保存逻辑
 				document.getElementById('saveFileToFolderBtn').addEventListener('click', function() {
-					if (selectedFolderId !== null) {
-						console.log(`文件将被保存到文件夹ID: ${selectedFolderId}`);
-						// TODO 在这里添加保存文件到选中文件夹的逻辑
-					} else {
-						alert('请选择一个文件夹！');
+					console.log(`文件将被保存到文件夹ID: ${selectedFolderId}`);
+					const formData = new FormData()
+					const originalFileId = [[${sharingFile.getFileId()}]]
+					const originalUserId = [[${sharingFile.getUserId()}]]
+					formData.append('originalFileId', originalFileId);
+					formData.append('originalUserId', originalUserId);
+					if (selectedFolderId !== "null" || selectedFolderId !== null) {
+						formData.append("folderId", selectedFolderId);
 					}
+
+					fetch('/user/saveShareFile', {
+						method: 'POST',
+						body: formData
+					})
+						.then(response => response.text())
+						.then(data => {
+							console.log(data)
+							// 关闭模态框
+							$('#saveFolderModal').modal('hide');
+							// 打开保存成功提示的模态框
+							// 使用setTimeout是为了确保有足够的时间让第一个模态框关闭，避免出现动画冲突。
+							setTimeout(() => $('#successModal').modal('show'), 500); // 500毫秒后显示成功提示模态框
+						})
+
 				});
 			});
-
 
 		</script>
 	</body>

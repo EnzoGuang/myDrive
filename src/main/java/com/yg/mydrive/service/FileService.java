@@ -11,7 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -489,5 +488,40 @@ public class FileService {
         Integer userId = Integer.parseInt(parts[1].split(":")[1]);
 
         return fileMapper.getFileById(fileId, userId);
+    }
+
+    /**
+     * 处理用户保存分享的文件
+     * @param originalFileId
+     * @param originalUserId
+     * @param folderId
+     * @param user
+     * @param fileMapper
+     * @param chunkMapper
+     * @param fileChunkMapper
+     * @return
+     */
+    public static ResponseEntity<String> handleSaveShareFile(Integer originalFileId,
+                                                             Integer originalUserId,
+                                                             Integer folderId,
+                                                             User user,
+                                                             FileMapper fileMapper,
+                                                             ChunkMapper chunkMapper,
+                                                             FileChunkMapper fileChunkMapper) {
+        // 获得原文件的记录
+        Files file = fileMapper.getFileById(originalFileId, originalUserId);
+
+        // 生成新的记录
+        Files newFile = new Files(file.getFileName(), file.getFileHash(), file.getTotalChunks(), file.getFileSize(), folderId, user.getUserId(), getTime());
+        fileMapper.generateShareFileRecord(newFile);
+
+        // 获得原文件的所有文件分片记录,然后插入新记录
+        List<FileChunk> fileChunks = fileChunkMapper.getAllFileChunkByFileId(originalFileId);
+        for (FileChunk fileChunk: fileChunks) {
+            fileChunkMapper.insertFileChunk(new FileChunk(newFile.getFileId(), fileChunk.getChunkId(), fileChunk.getChunkIndex(), getTime()));
+            // 更新分片表的分片次数
+            chunkMapper.updateReferenceCountById(fileChunk.getChunkId());
+        }
+        return ResponseEntity.ok().body("newFile id: " + newFile.getFileId());
     }
 }

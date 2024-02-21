@@ -62,4 +62,10 @@
     <update id="updateParentFolderId">
         update file set folder_id = #{targetFolderId} where user_id = #{userId} and id = #{fileId};
     </update>
+
+    <!-- 生成文件分享保存的记录 -->
+    <insert id="generateShareFileRecord" useGeneratedKeys="true" keyProperty="file.fileId" keyColumn="id">
+        insert into file (file_name, file_hash, file_size, total_chunks, folder_id, user_id, upload_time)
+            values (#{file.fileName}, #{file.fileHash}, #{file.fileSize}, #{file.totalChunks}, #{file.folderId}, #{file.userId}, #{file.uploadTime});
+    </insert>
 </mapper>

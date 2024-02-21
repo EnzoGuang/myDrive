@@ -23,6 +23,16 @@ public class Files {
         this.uploadTime = uploadTime;
     }
 
+    public Files(String fileName, String fileHash, int totalChunks, long fileSize, Integer folderId, Integer userId, String uploadTime) {
+        this.fileName = fileName;
+        this.fileHash = fileHash;
+        this.totalChunks = totalChunks;
+        this.fileSize = fileSize;
+        this.folderId = folderId;
+        this.userId = userId;
+        this.uploadTime = uploadTime;
+    }
+
     public Files(String fileName, String fileHash, int totalChunks, Integer userId, String uploadTime) {
         this.fileName = fileName;
         this.fileHash = fileHash;
