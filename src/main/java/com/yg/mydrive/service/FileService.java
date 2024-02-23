@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import java.io.*;
@@ -25,8 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Service
 public class FileService {
+    public static final String STATUS_ACTIVE = "active";
+    public static final String STATUS_DELETED = "deleted";
 
+    public static final String FILE_TYPE = "file";
+    public static final String FOLDER_TYPE = "folder";
     private static final File UPLOAD_DIR = Utils.join(System.getProperty("user.dir"), "uploads");
     private static Map<Integer, ChunkFileStatus> statusMap = new ConcurrentHashMap<>();
 
@@ -361,6 +367,136 @@ public class FileService {
 //        }
         return 0;
     }
+
+//    public static ResponseEntity<String> handleSoftDeleteItem(Integer itemId,
+//                                                              String status,
+//                                                              User user,
+//                                                              FileMapper fileMapper,
+//                                                              FolderMapper folderMapper) {
+//    }
+//
+//    public static ResponseEntity<String> handleSoftDeleteItem(Integer itemId,
+//                                                              Integer parentFolderId, // 如果是单纯删除文件的话才需要此参数
+//                                                              String status,
+//                                                              User user,
+//                                                              FileMapper fileMapper,
+//                                                              FolderMapper folderMapper) {
+//
+//    }
+
+    /**
+     * 更新文件的status
+     * @param fileId
+     * @param user
+     * @param status
+     * @param fileMapper
+     */
+    public static void handleUpdateFileStatus(Integer fileId, User user, String status, FileMapper fileMapper) {
+        if (status.equalsIgnoreCase(STATUS_ACTIVE)) {
+            softRecoverFile(fileId, user, fileMapper);
+        } else if(status.equalsIgnoreCase(STATUS_DELETED)) {
+            softDeleteFile(fileId, user, fileMapper);
+        }
+    }
+
+    /**
+     * 设置文件status 为 'deleted'
+     * @param fileId
+     * @param user
+     * @param fileMapper
+     */
+    private static void softDeleteFile(Integer fileId, User user, FileMapper fileMapper) {
+        fileMapper.updateFileStatus(fileId, user.getUserId(), STATUS_DELETED);
+    }
+
+    /**
+     * 设置文件status 为 'active'
+     * @param fileId
+     * @param user
+     * @param fileMapper
+     */
+    private static void softRecoverFile(Integer fileId, User user, FileMapper fileMapper) {
+        fileMapper.updateFileStatus(fileId, user.getUserId(), STATUS_ACTIVE);
+    }
+
+    /**
+     * 更新文件夹及其子项的status
+     * @param folderId
+     * @param user
+     * @param status
+     * @param fileMapper
+     * @param folderMapper
+     */
+    public static void handleUpdateFolderStatus(Integer folderId, User user, String status, FileMapper fileMapper, FolderMapper folderMapper) {
+        if (status.equalsIgnoreCase(STATUS_ACTIVE)) {
+            softRecoverFolderRecursively(folderId, user.getUserId(), fileMapper, folderMapper);
+        } else if (status.equalsIgnoreCase(STATUS_DELETED)) {
+            softDeleteFolderRecursively(folderId, user.getUserId(), fileMapper, folderMapper);
+        }
+    }
+
+    /**
+     * 递归设置子文件夹和文件的状态为 'deleted'
+     * @param folderId
+     * @param userId
+     * @param fileMapper
+     * @param folderMapper
+     */
+    private static void softDeleteFolderRecursively(Integer folderId, Integer userId, FileMapper fileMapper, FolderMapper folderMapper) {
+        recursiveUpdateFolderStatus(folderId, userId, STATUS_DELETED, fileMapper, folderMapper);
+    }
+
+    /**
+     * 递归设置子文件夹和文件的状态为 'active'
+     * @param folderId
+     * @param userId
+     * @param fileMapper
+     * @param folderMapper
+     */
+    private static void softRecoverFolderRecursively(Integer folderId, Integer userId, FileMapper fileMapper, FolderMapper folderMapper) {
+        recursiveUpdateFolderStatus(folderId, userId, STATUS_ACTIVE, fileMapper, folderMapper);
+    }
+
+    /**
+     * 递归更新文件夹folder的状态status
+     * @param folderId
+     * @param userId
+     * @param status
+     * @param fileMapper
+     * @param folderMapper
+     */
+    private static void recursiveUpdateFolderStatus(Integer folderId, Integer userId, String status, FileMapper fileMapper, FolderMapper folderMapper) {
+        // 根据folderId查找一层子目录的id
+        List<Integer> subFoldersId = folderMapper.findSubFoldersId(folderId, userId);
+
+        // 递归并更新所有子文件夹的文件状态status
+        for (Integer subFolderId : subFoldersId) {
+            recursiveUpdateFolderStatus(subFolderId, userId, status, fileMapper, folderMapper);
+        }
+
+        // 查找并标记当前文件夹中的文件的status
+        setFileInFolderStatus(folderId, userId, status, fileMapper);
+
+        // 标记当前文件夹status为deleted
+        folderMapper.updateFolderStatus(folderId, userId, status);
+
+    }
+
+    /**
+     * 设置在某个文件夹中的所有文件状态, 'active' 或 'deleted'
+     * @param parentFolderId
+     * @param userId
+     * @param status
+     * @param fileMapper
+     */
+    private static void setFileInFolderStatus(Integer parentFolderId, Integer userId, String status, FileMapper fileMapper) {
+        List<Integer> filesId = fileMapper.findFilesIdInFolder(parentFolderId, userId);
+        for(Integer fileId: filesId) {
+            fileMapper.updateFileStatus(fileId, userId, status);
+        }
+    }
+
+
 
     /**
      * 实现创建文件夹功能, 同级目录下不能有同名文件夹

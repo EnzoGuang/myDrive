@@ -30,4 +30,13 @@ public interface FileMapper {
     // 生成文件分享保存的记录
     int generateShareFileRecord(@Param("file") Files file);
 
+    // 通过文件夹id查找所有属于该文件夹的文件
+    List<Integer> findFilesIdInFolder(@Param("folderId") Integer folderId, @Param("userId") Integer userId);
+
+    // 设置文件的status,status为'active'或'deleted'
+    int updateFileStatus(@Param("fileId") Integer fileId, @Param("userId") Integer userId, @Param("status") String status);
+
+    // 获得删除的文件不属于任何已删除的文件夹
+    List<Files> findFilesNotInDeletedFolders(@Param("userId") Integer userId);
+
 }

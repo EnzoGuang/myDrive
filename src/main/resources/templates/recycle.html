@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="UTF-8">
+		<title>回收站</title>
+		<!-- 引入项目图标 -->
+		<link th:href="@{/icon/mydrive.png}" rel="icon">
+		<!-- 引入layui -->
+		<link th:href="@{/layui/css/layui.css}" rel="stylesheet">
+		<!-- 引入bootstrap -->
+		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+	</head>
+	<body>
+		<div class="container my-4">
+			<!-- 返回主页按钮 -->
+			<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+				<a href="/user/homepage" class="btn btn-primary mb-3">返回主页</a>
+			</div>
+
+			<h2 class="mb-4">回收站</h2>
+
+			<!-- 文件表格 -->
+			<h3>文件</h3>
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th scope="col">#</th>
+							<th scope="col">名称</th>
+							<th scope="col">类型</th>
+							<th scope="col">删除日期</th>
+							<th scope="col">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="file, iterStat: ${softDeleteFiles}">
+							<th scope="row" th:text="${iterStat.count}"></th>
+							<td th:text="${file.getFileName()}"></td>
+							<td>文件</td>
+							<td th:text="${file.getDeleteTime()}"></td>
+							<td>
+								<button th:data-file-id="${file.getFileId()}" class="btn btn-success btn-sm" onclick="updateItemStatus(this.getAttribute('data-file-id'), 'file', 'active')">恢复</button>
+								<button class="btn btn-danger btn-sm">彻底删除</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- 文件夹表格 -->
+			<h3 class="mt-4">文件夹</h3>
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th scope="col">#</th>
+							<th scope="col">名称</th>
+							<th scope="col">类型</th>
+							<th scope="col">删除日期</th>
+							<th scope="col">操作</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="folder, iterStat : ${softDeleteFolders}">
+							<th scope="row" th:text="${iterStat.count}"></th>
+							<td th:text="${folder.getFolderName()}"></td>
+							<td>文件夹</td>
+							<td th:text="${folder.getDeleteTime()}"></td>
+							<td>
+								<button th:data-folder-id="${folder.getFolderId()}" class="btn btn-success btn-sm" onclick="updateItemStatus(this.getAttribute('data-folder-id'), 'folder', 'active')">恢复</button>
+								<button class="btn btn-danger btn-sm">彻底删除</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<script src="/bootstrap/js/bootstrap.bundle.js"></script>
+		<script src="/bootstrap/js/bootstrap.bundle.min.js"></script>
+		<script src="/js/updateItemStatus.js"></script>
+		<script>
+			function restoreItem(itemId, itemType) {
+				console.log(`Requesting to restore ${itemType} with ID ${itemId}`);
+				// 实现发送恢复请求的逻辑，可以使用 fetch API
+			}
+
+			function permanentlyDeleteItem(itemId, itemType) {
+				console.log(`Requesting to permanently delete ${itemType} with ID ${itemId}`);
+				// 实现发送彻底删除请求的逻辑，可以使用 fetch API
+			}
+		</script>
+	</body>
+</html>

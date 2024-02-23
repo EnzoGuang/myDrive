@@ -53,6 +53,8 @@
         where id = #{fileId} and status = 'active' and user_id = #{userId}
     </select>
 
+
+
     <!-- 更新文件名通过文件id -->
     <update id="updateFileNameById">
         update file set file_name = #{newFileName} where user_id = #{userId} and id = #{fileId}
@@ -68,4 +70,60 @@
         insert into file (file_name, file_hash, file_size, total_chunks, folder_id, user_id, upload_time)
             values (#{file.fileName}, #{file.fileHash}, #{file.fileSize}, #{file.totalChunks}, #{file.folderId}, #{file.userId}, #{file.uploadTime});
     </insert>
+
+    <!-- 通过文件夹id查找所有属于该文件夹的文件 -->
+    <select id="findFilesIdInFolder" resultType="java.lang.Integer">
+        select id
+        from file
+        where user_id = #{userId}
+        <if test="folderId == null">
+            and folder_id is null
+        </if>
+        <if test="folderId != null">
+            and folder_id = #{folderId}
+        </if>
+    </select>
+
+    <!-- 设置文件的status,status为'active'或'deleted' -->
+    <update id="updateFileStatus">
+        update file set status = #{status},
+        <if test="status == 'active'">
+            delete_time = null
+        </if>
+        <if test="status == 'deleted'">
+            delete_time = now()
+        </if>
+        where user_id = #{userId} and id = #{fileId}
+
+    </update>
+
+    <!-- 获得删除的文件不属于任何已删除的文件夹 -->
+    <select id="findFilesNotInDeletedFolders" resultType="com.yg.mydrive.entity.Files">
+        WITH RECURSIVE deleted_folders AS (
+            SELECT id, folder_name
+            from folder
+            where status = 'deleted' and user_id = #{userId}
+            union all
+            select folder.id, folder.folder_name
+            from folder
+            inner join deleted_folders on folder.parent_folder_id = deleted_folders.id
+            where folder.user_id = #{userId}
+        )
+        select
+            f.id fileId,
+            f.file_name fileName,
+            f.file_hash fileHash,
+            f.file_size fileSize,
+            f.total_chunks totalChunks,
+            f.folder_id folderId,
+            f.user_id userId,
+            f.version_control_enabled versionControlEnabled,
+            f.current_version_id currentVersionId,
+            f.upload_time uploadTime,
+            f.status,
+            f.delete_time deleteTime
+        from file f
+        where not exists (select 1 from deleted_folders df where f.folder_id = df.id)
+        and f.status = 'deleted' and f.user_id = #{userId}
+    </select>
 </mapper>

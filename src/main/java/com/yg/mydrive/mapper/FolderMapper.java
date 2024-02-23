@@ -28,4 +28,15 @@ public interface FolderMapper {
     // 更新目录名
     int updateFolderNameById(@Param("folderId") Integer folderId, @Param("targetFolderName") String targetFolderName, @Param("userId") Integer userId);
 
+    // 查找给定folderId的一层子目录
+    List<Integer> findSubFoldersId(@Param("folderId") Integer folderId, @Param("userId") Integer userId);
+
+    // 设置文件夹的status,status为'active'或'deleted'
+    int updateFolderStatus(@Param("folderId") Integer folderId, @Param("userId") Integer userId, @Param("status") String status);
+
+    // 查找状态status为'deleted'的文件夹
+    List<Folder> findAllSoftDeleteFolder(@Param("userId") Integer userId);
+
+    // 获取不属于任何已删除文件夹的文件夹
+    List<Folder> findFoldersNotInDeletedFolders(@Param("userId") Integer userId);
 }

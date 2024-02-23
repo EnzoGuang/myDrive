@@ -22,10 +22,13 @@
 				<a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
 					<img th:src="@{/icon/user2.png}" alt="mdo" width="32" height="32" class="rounded-circle">
 				</a>
-				<ul class="dropdown-menu text-small" aria-labelledby="dropdownUser1">
+				<ul class="dropdown-menu" aria-labelledby="dropdownUser1">
 					<li th:text="'当前用户: ' + ${currentUser.getEmail()}"></li>
 					<li><hr class="dropdown-divider"></li>
-					<li><a class="dropdown-item" href="/user/logout">退出登录</a></li>
+					<!-- TODO 实现回收站功能 -->
+					<li><a class="dropdown-item " href="/user/recyclePage">回收站</a></li>
+					<li><hr class="dropdown-divider"></li>
+					<li><a class="dropdown-item bg-danger-subtle" href="/user/logout">退出登录</a></li>
 				</ul>
 			</div>
 		</div>

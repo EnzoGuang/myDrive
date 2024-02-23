@@ -67,6 +67,6 @@ create table folder(
     user_id INT COMMENT '外键关联user表',
     create_time DATETIME,
     status VARCHAR(255) DEFAULT 'active' COMMENT '标识文件夹状态，active为正常，deleted为已删除进入回收站',
-    deleted_time DATETIME DEFAULT NULL COMMENT '记录文件夹被删除的时间',
+    delete_time DATETIME DEFAULT NULL COMMENT '记录文件夹被删除的时间',
     FOREIGN KEY (user_id) REFERENCES user(id)
 );

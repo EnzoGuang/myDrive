@@ -4,6 +4,8 @@ import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.*;
+import com.yg.mydrive.service.FileService;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -230,6 +232,46 @@ public class UserManipulateController {
 //    }
 
     /**
+     * 展示回收站的页面
+     * @param session
+     * @param modelMap
+     * @return
+     */
+    @GetMapping("recyclePage")
+    public String recyclePage(HttpSession session, ModelMap modelMap) {
+        User user = (User) session.getAttribute("currentUser");
+        List<Files> softDeleteFiles = fileMapper.findFilesNotInDeletedFolders(user.getUserId());
+        List<Folder> softDeleteFolders = folderMapper.findFoldersNotInDeletedFolders(user.getUserId());
+
+        modelMap.put("softDeleteFiles", softDeleteFiles);
+        modelMap.put("softDeleteFolders", softDeleteFolders);
+
+        return "recycle";
+    }
+
+    /**
+     * 软删除, 将删除项放入回收站
+     * @param itemId
+     * @param itemType
+     * @param status
+     * @param session
+     * @return
+     */
+    @PostMapping("softDeleteOrRecoverItem")
+    public ResponseEntity<String> softDeleteOrRecoverItem(@RequestParam("itemId") Integer itemId,
+                                                 @RequestParam("itemType") String itemType,
+                                                 @RequestParam("status") String status,
+                                                 HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        if (itemType.equalsIgnoreCase(FILE_TYPE)) {
+            handleUpdateFileStatus(itemId, user, status, fileMapper);
+        } else if(itemType.equalsIgnoreCase(FOLDER_TYPE)) {
+            handleUpdateFolderStatus(itemId, user, status, fileMapper, folderMapper);
+        }
+        return new ResponseEntity<String>(HttpStatus.OK);
+    }
+
+    /**
      * 创建文件夹
      * @param folderName
      * @param session
@@ -338,7 +380,7 @@ public class UserManipulateController {
     /**
      * 处理分享文件的保存功能
      * @param originalFileId
-     * @param folderId
+     * @param originalUserId
      * @param session
      * @return
      */

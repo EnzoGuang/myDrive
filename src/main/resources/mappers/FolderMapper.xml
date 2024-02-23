@@ -57,4 +57,60 @@
     <update id="updateFolderNameById">
         update folder set folder_name = #{targetFolderName} where id = #{folderId} and user_id = #{userId}
     </update>
+
+    <!-- 查找给定folderId的一层子目录 -->
+    <select id="findSubFoldersId" resultType="java.lang.Integer">
+        select id
+        from folder
+        where user_id = #{userId}
+        <if test="folderId != null">
+            and parent_folder_id = #{folderId}
+        </if>
+        <if test="folderId == null">
+            and parent_folder_id is null
+        </if>
+    </select>
+
+    <!-- 设置文件夹的status,status为'active'或'deleted' -->
+    <update id="updateFolderStatus">
+        update folder set status = #{status},
+        <if test="status == 'active'">
+            delete_time = null
+        </if>
+        <if test="status == 'deleted'">
+            delete_time = now()
+        </if>
+        where user_id = #{userId} and id = #{folderId}
+    </update>
+
+    <!-- 查找状态status为'deleted'的文件夹 -->
+    <select id="findAllSoftDeleteFolder" resultType="com.yg.mydrive.entity.Folder">
+        select id folderId,
+               folder_name folderName,
+               parent_folder_id parentFolderId,
+               user_id userId,
+               create_time createTime,
+               status,
+               delete_time deleteTime
+        from folder
+        where user_id = #{userId} and status = 'deleted'
+    </select>
+
+    <!-- 获取不属于任何已删除文件夹的文件夹 -->
+    <select id="findFoldersNotInDeletedFolders" resultType="com.yg.mydrive.entity.Folder">
+        SELECT
+            f.id folderId,
+            f.folder_name folderName,
+            f.parent_folder_id parentFolderId,
+            f.user_id userId,
+            f.create_time createTime,
+            f.status,
+            f.delete_time deleteTime
+        FROM folder f
+                 LEFT JOIN folder parent ON f.parent_folder_id = parent.id
+        WHERE f.status = 'deleted'
+          AND (f.parent_folder_id IS NULL OR parent.status != 'deleted')
+          AND f.user_id = #{userId};
+
+    </select>
 </mapper>
