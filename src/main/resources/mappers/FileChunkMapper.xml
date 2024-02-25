@@ -4,7 +4,8 @@
 
     <!-- 将文件-分片关联关系插入表中 -->
     <insert id="insertFileChunk" useGeneratedKeys="true" keyProperty="fileChunk.fileId" keyColumn="id">
-        insert into file_chunk values (null, #{fileChunk.fileId}, #{fileChunk.chunkId}, #{fileChunk.chunkIndex}, null, #{fileChunk.uploadTime})
+        insert into file_chunk (file_id, chunk_id, chunk_index, version_id, upload_time)
+            values (#{fileChunk.fileId}, #{fileChunk.chunkId}, #{fileChunk.chunkIndex}, #{fileChunk.versionId}, #{fileChunk.uploadTime})
     </insert>
 
     <!-- 通过文件id和版本id获得所有分片的id,id按照分片的序号从小到大排列 -->

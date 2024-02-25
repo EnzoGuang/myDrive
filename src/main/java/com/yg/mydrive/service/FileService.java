@@ -1,10 +1,7 @@
 package com.yg.mydrive.service;
 
 import com.yg.mydrive.entity.*;
-import com.yg.mydrive.mapper.ChunkMapper;
-import com.yg.mydrive.mapper.FileChunkMapper;
-import com.yg.mydrive.mapper.FileMapper;
-import com.yg.mydrive.mapper.FolderMapper;
+import com.yg.mydrive.mapper.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,19 +48,18 @@ public class FileService {
      * 处理上传到的文件分片
      * @param chunk
      * @param fileId
-     * @param parentFolderId
      * @param chunkIndex
      * @param clientChunkHash
      * @param totalChunks
-     * @param user
      * @param fileMapper
      * @param chunkMapper
      * @param fileChunkMapper
      * @return
      */
-    public static ResponseEntity<String> handleChunks(MultipartFile chunk, Integer fileId, Integer parentFolderId,
+    public static ResponseEntity<String> handleChunks(MultipartFile chunk, Integer fileId,
                                                       Integer chunkIndex, String clientChunkHash,
-                                                      Integer totalChunks, User user,
+                                                      Integer totalChunks,
+                                                      Integer versionId,
                                                       FileMapper fileMapper,
                                                       ChunkMapper chunkMapper,
                                                       FileChunkMapper fileChunkMapper) {
@@ -82,9 +78,10 @@ public class FileService {
                 chunkFileStatus.markChunkAsUploaded(chunkIndex, chunkId, chunk.getSize());
             }
 
-            // 向file-chunk关联表中添加记录
-            FileChunk fileChunk = new FileChunk(fileId, chunkId, chunkIndex, getTime());
-            Integer fileChunkId = fileChunkMapper.insertFileChunk(fileChunk);
+            // TODO 需要考虑版本控制向file-chunk关联表中添加记录
+            FileChunk fileChunk = new FileChunk(fileId, chunkId, chunkIndex, versionId, getTime());
+            fileChunkMapper.insertFileChunk(fileChunk);
+
 
             if (chunkFileStatus.isUploadComplete()) {
                 // 文件的所有分片都上传完毕后,更新文件表添加该文件的大小
@@ -98,24 +95,30 @@ public class FileService {
     }
 
     /**
-     * 进行文件上传初始化操作,返回该文件的id值
+     * 进行文件上传初始化操作,返回Files对象
      * @param fileName
-     * @param fileHash
      * @param totalChunks
      * @param user
      * @param parentFolderId
      * @param fileMapper
      * @return
      */
-    public static Integer initializeUpload(String fileName,
-                                           String fileHash,
+    public static Files initializeUpload(String fileName,
                                            Integer totalChunks,
                                            User user,
                                            Integer parentFolderId,
-                                           FileMapper fileMapper) {
-        Files file = new Files(fileName, fileHash, totalChunks, parentFolderId, user.getUserId(), getTime());
+                                           Boolean versionControlEnabled,
+                                           FileMapper fileMapper,
+                                           FileVersionMapper fileVersionMapper) {
+        Files file = new Files(fileName, totalChunks, parentFolderId, user.getUserId(), versionControlEnabled, getTime());
         fileMapper.initializeFile(file);
-        return file.getFileId();
+        if (versionControlEnabled) {
+            FileVersion fileVersion = new FileVersion(file.getFileId());
+            fileVersionMapper.initializeFileVersion(fileVersion);
+            fileMapper.updateVersionId(file.getFileId(), fileVersion.getFileVersionId());
+            file.setCurrentVersionId(fileVersion.getFileVersionId());
+        }
+        return file;
     }
 
     /**
@@ -124,7 +127,7 @@ public class FileService {
      * @param chunkMapper
      * @return
      */
-    public static Integer checkChunkHashIfExists(String chunkHash, Integer fileId, Integer chunkIndex,
+    public static Integer checkChunkHashIfExists(String chunkHash, Integer fileId, Integer chunkIndex, Integer versionId,
                                                  ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
         Integer chunkId = chunkMapper.checkChunkExistsByHash(chunkHash);
         if (chunkId != null) {
@@ -133,7 +136,7 @@ public class FileService {
             chunkMapper.updateReferenceCountByHash(chunkId, chunkHash);
 
             // 更新file-chunk表
-            fileChunkMapper.insertFileChunk(new FileChunk(fileId, chunkId, chunkIndex, getTime()));
+            fileChunkMapper.insertFileChunk(new FileChunk(fileId, chunkId, versionId, chunkIndex, getTime()));
             return chunkId;
         }
         return null;
@@ -648,12 +651,13 @@ public class FileService {
         Files file = fileMapper.getFileById(originalFileId, originalUserId);
 
         // 生成新的记录
-        Files newFile = new Files(file.getFileName(), file.getFileHash(), file.getTotalChunks(), file.getFileSize(), folderId, user.getUserId(), getTime());
+        Files newFile = new Files(file.getFileName(), file.getTotalChunks(), file.getFileSize(), folderId, user.getUserId(), getTime());
         fileMapper.generateShareFileRecord(newFile);
 
         // 获得原文件的所有文件分片记录,然后插入新记录
         List<FileChunk> fileChunks = fileChunkMapper.getAllFileChunkByFileId(originalFileId);
         for (FileChunk fileChunk: fileChunks) {
+            // TODO 需要考虑版本控制
             fileChunkMapper.insertFileChunk(new FileChunk(newFile.getFileId(), fileChunk.getChunkId(), fileChunk.getChunkIndex(), getTime()));
             // 更新分片表的分片次数
             chunkMapper.updateReferenceCountById(fileChunk.getChunkId());

@@ -146,6 +146,7 @@
 							<span>[[${file.getFileName()}]]</span>
 						</div>
 						<div class="d-flex align-items-center justify-content-end">
+							<img th:if="${file.getVersionControlEnabled()}" th:src="@{/icon/cloud-check.svg}" alt="Version-Control" class="img-fluid mr-2"></img>
 							<div class="me-2">
 								<span th:if="${file.getFileSize() < 1024}">1 KB</span>
 								<span th:if="${file.getFileSize() >= 1024 and file.getFileSize() < 1024.0 * 1024.0 }">[[${#numbers.formatDecimal(file.getFileSize() / 1024.0, 1, 2)}]] KB</span>
@@ -164,6 +165,15 @@
 									<a href="#" th:data-file-id="${file.getFileId()}" th:data-file-name="${file.getFileName()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#renameModal" onclick="setItemIdForRename(this.getAttribute('data-file-id'), 'file', this.getAttribute('data-file-name'))">重命名</a>
 									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveModal" onclick="prepareMoveModal(this.getAttribute('data-file-id'), 'file')">移动</a>
 									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="generateShareLink(this.getAttribute('data-file-id'))">生成分享链接</a>
+									<!-- 根据版本控制状态显示不同选项 -->
+									<div th:if="${file.versionControlEnabled}">
+										// TODO 完成上传新版本逻辑
+										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item">上传新版本</a>
+									</div>
+									<div th:if="${!file.versionControlEnabled}">
+										// TODO 完成开启版本控制
+										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item">开启版本控制</a>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -332,6 +342,14 @@
 					<label for="fileInput" class="form-label">请选择文件</label>
 					<input type="file" class="form-control bg-secondary-subtle" id="fileInput" name="file">
 				</div>
+
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" id="versionControlEnabled">
+					<label class="form-check-label" for="versionControlEnabled">
+						开启版本控制
+					</label>
+				</div>
+
 				<!-- 进度条 -->
 				<div class="progress my-3" style="height: 20px;">
 					<div id="progressBar" class="progress-bar bg-success" role="progressbar"
@@ -359,18 +377,22 @@
 
 			document.getElementById('uploadButton').addEventListener('click', async () => {
 				if (selectedFile) {
-					showHashCalculationStatus('正在计算文件哈希,请稍候...');
-					const fileHash = await calculateHash(selectedFile);
-					showHashCalculationStatus(selectedFile.name + ' 文件哈希计算完成:' + fileHash);
+					// showHashCalculationStatus('正在计算文件哈希,请稍候...');
+					// const fileHash = await calculateHash(selectedFile);
+					// showHashCalculationStatus(selectedFile.name + ' 文件哈希计算完成:' + fileHash);
 
 					// 设置分片大小位10MB
 					const chunkSize = 10 * 1024 * 1024;
 					const totalChunks = Math.ceil(selectedFile.size / chunkSize);
 					let uploadSuccess = true; // 追踪文件上传是否成功
 
+					// 获得版本控制状态
+					const versionControlEnabled = document.getElementById('versionControlEnabled').checked
+
 					// 进行文件初始化设置
-					const fileId = await initializeFileUpload(selectedFile.name, fileHash, totalChunks, parentFolderId);
+					const {fileId, versionId} = await initializeFileUpload(selectedFile.name, totalChunks, parentFolderId, versionControlEnabled);
 					console.log('文件id是' + fileId);
+					console.log('版本id是' + versionId);
 
 					for (let i = 0; i < totalChunks; i++) {
 						const chunk = selectedFile.slice(i * chunkSize, (i + 1) * chunkSize);
@@ -393,6 +415,9 @@
 						formData.append('chunkIndex', i);
 						formData.append('chunkHash', chunkHash);
 						formData.append('totalChunks', totalChunks);
+						if (versionId !== null) {
+							formData.append('versionId', versionId);
+						}
 
 						try {
 							const response = await fetch('/user/uploadChunk', {
@@ -424,15 +449,15 @@
 				}
 			})
 
-			// 文件上传初始化操作
-			async function initializeFileUpload(fileName, fileHash, totalChunks, parentFolderId) {
+			// 文件上传初始化操作,返回文件id和版本id
+			async function initializeFileUpload(fileName, totalChunks, parentFolderId, versionControlEnabled) {
 				const formData = new FormData();
 				formData.append('fileName', fileName);
-				formData.append('fileHash', fileHash);
 				formData.append('totalChunks', totalChunks);
 				if (parentFolderId != null) {
 					formData.append('parentFolderId', parentFolderId);
 				}
+				formData.append('versionControlEnabled', versionControlEnabled);
 				try {
 					const response = await fetch('/user/initializeFileUpload', {
 						method: 'POST',
@@ -440,13 +465,29 @@
 					});
 
 					if (!response.ok) {
-						throw new Error('Failed to initialize file upload' + await response.text());
+						throw new Error('Failed to initialize file upload' + response.status);
 					}
 
-					// 获得response的内容
-					const fileId = await response.text();
+
+					// 获得数据
+					const responseData = await response.json();
+
+					if (responseData.error) {
+						console.error('Error during file initialization: ', responseData.error);
+						alert('文件初始化操作失败: ' + responseData.error);
+						return; // 早期返回，防止进一步执行
+					}
+
+					const fileId = responseData.fileId;
+					const versionId = responseData.versionId;
+
 					console.log('initialize function fileId: ' + fileId);
-					return parseInt(fileId, 10);
+					console.log('initialize function versionId: ' + versionId);
+
+					return {
+						fileId: parseInt(fileId, 10),
+						versionId: versionId ? parseInt(versionId, 10) : null
+					};
 				} catch (error) {
 					console.log('Initialization error: ', error);
 					alert('文件初始化操作失败');
@@ -454,11 +495,14 @@
 			}
 
 			// 判断服务器端是否已经存储了该分片
-			async function checkChunkExist(chunkHash, fileId, chunkIndex) {
+			async function checkChunkExist(chunkHash, fileId, chunkIndex, versionId) {
 				const formData = new FormData();
 				formData.append('chunkHash', chunkHash);
 				formData.append('fileId', fileId);
 				formData.append('chunkIndex', chunkIndex);
+				if (versionId !== null) {
+					formData.append('versionId', versionId);
+				}
 
 				// 发送POST请求给服务端
 				const response = await fetch('/user/checkChunkExist', {
@@ -486,10 +530,13 @@
 			}
 
 			// 文件所有分片上传完成后调用该函数,更新文件的大小
-			async function updateFileSize(fileId) {
+			async function updateFileSize(fileId, versionId) {
 				const formData = new FormData();
 
 				formData.append('fileId', fileId);
+				if (versionId !== null) {
+					formData.append('versionId', versionId);
+				}
 				console.log('进入更新文件大小函数');
 
 				const response = await fetch('/user/updateFileSize', {

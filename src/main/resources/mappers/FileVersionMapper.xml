@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.yg.mydrive.mapper.FileVersionMapper">
+
+    <!-- 初始化文件版本控制记录 -->
+    <insert id="initializeFileVersion" useGeneratedKeys="true" keyProperty="fileVersion.fileVersionId" keyColumn="id">
+        insert into file_version (file_id, upload_time) values (#{fileVersion.fileId}, NOW());
+    </insert>
+</mapper>

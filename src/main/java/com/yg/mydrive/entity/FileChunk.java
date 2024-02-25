@@ -10,12 +10,21 @@ public class FileChunk {
 
     public FileChunk() {}
 
+    public FileChunk(Integer fileId, Integer chunkId, Integer chunkIndex, Integer versionId, String uploadTime) {
+        this.fileId = fileId;
+        this.chunkId = chunkId;
+        this.chunkIndex = chunkIndex;
+        this.versionId = versionId;
+        this.uploadTime = uploadTime;
+    }
+
     public FileChunk(Integer fileId, Integer chunkId, Integer chunkIndex, String uploadTime) {
         this.fileId = fileId;
         this.chunkId = chunkId;
         this.chunkIndex = chunkIndex;
         this.uploadTime = uploadTime;
     }
+
 
     public Integer getFileChunkId() {
         return fileChunkId;

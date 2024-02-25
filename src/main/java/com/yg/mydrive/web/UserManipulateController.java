@@ -4,8 +4,6 @@ import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
 import com.yg.mydrive.mapper.*;
-import com.yg.mydrive.service.FileService;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +39,9 @@ public class UserManipulateController {
 
     @Autowired
     FolderMapper folderMapper;
+
+    @Autowired
+    FileVersionMapper fileVersionMapper;
 
     /**
      * 进行用户登录时,通过邮箱和密码进行鉴别
@@ -141,15 +142,16 @@ public class UserManipulateController {
                                               @RequestParam("chunkIndex") Integer chunkIndex,
                                               @RequestParam("chunkHash") String chunkHash,
                                               @RequestParam("totalChunks") Integer totalChunks,
+                                              @RequestParam(required = false, value = "versionId") Integer versionId,
                                               HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         if (user == null) {
             return "redirect:/index";
         }
         if (parentFolderId.equals("null")) {
-            handleChunks(chunk, fileId, null, chunkIndex, chunkHash, totalChunks, user, fileMapper, chunkMapper, fileChunkMapper);
+            handleChunks(chunk, fileId, chunkIndex, chunkHash, totalChunks, versionId, fileMapper, chunkMapper, fileChunkMapper);
         } else {
-            handleChunks(chunk, fileId, Integer.parseInt(parentFolderId), chunkIndex, chunkHash, totalChunks, user, fileMapper, chunkMapper, fileChunkMapper);
+            handleChunks(chunk, fileId, chunkIndex, chunkHash, totalChunks, versionId, fileMapper, chunkMapper, fileChunkMapper);
         }
 
         String redirectUrl = "redirect:/user/homepage";
@@ -161,24 +163,30 @@ public class UserManipulateController {
 
     /**
      * 进行文件上传初始化操作,返回该文件的id值
+     *
      * @param fileName
-     * @param fileHash
      * @param totalChunks
      * @param parentFolderId
      * @return
      */
     @PostMapping("initializeFileUpload")
-    public ResponseEntity<String> initializeFileUpload(@RequestParam String fileName,
-                                        @RequestParam String fileHash,
-                                        @RequestParam Integer totalChunks,
-                                        @RequestParam(value = "parentFolderId", required = false) Integer parentFolderId,
-                                        HttpSession session) {
+    public ResponseEntity<Map<String, Object>> initializeFileUpload(@RequestParam String fileName,
+                                                       @RequestParam Integer totalChunks,
+                                                       @RequestParam(value = "parentFolderId", required = false) Integer parentFolderId,
+                                                       @RequestParam(value = "versionControlEnabled", defaultValue = "false") Boolean versionControlEnabled,
+                                                       HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
-        Integer fileId = initializeUpload(fileName, fileHash, totalChunks, user, parentFolderId, fileMapper);
-        if (fileId != null) {
-            return ResponseEntity.ok().body(fileId.toString());
+        Files file = initializeUpload(fileName, totalChunks, user, parentFolderId, versionControlEnabled, fileMapper, fileVersionMapper);
+        Map<String, Object> responseBody = new HashMap<>();
+        if (file.getFileId() != null) {
+            responseBody.put("fileId", file.getFileId());
+            Integer versionId = file.getCurrentVersionId();
+            responseBody.put("versionId", versionId != null ? versionId.toString() : null);
+            return ResponseEntity.ok().body(responseBody);
+        } else {
+            responseBody.put("error", "服务端文件初始化操作失败");
+            return ResponseEntity.internalServerError().body(responseBody);
         }
-        return ResponseEntity.internalServerError().body("服务端文件初始化操作失败");
     }
 
     /**
@@ -189,8 +197,9 @@ public class UserManipulateController {
     @PostMapping("checkChunkExist")
     public ResponseEntity<String> checkChunkExist(@RequestParam("chunkHash") String chunkHash,
                                                   @RequestParam("fileId") Integer fileId,
-                                                  @RequestParam("chunkIndex") Integer chunkIndex) {
-        Integer chunkId= checkChunkHashIfExists(chunkHash, fileId, chunkIndex, chunkMapper, fileChunkMapper);
+                                                  @RequestParam("chunkIndex") Integer chunkIndex,
+                                                  @RequestParam(required = false, value = "versionId") Integer versionId) {
+        Integer chunkId= checkChunkHashIfExists(chunkHash, fileId, chunkIndex, versionId, chunkMapper, fileChunkMapper);
         return ResponseEntity.ok(chunkId != null ? "true": "false");
     }
 
@@ -200,7 +209,8 @@ public class UserManipulateController {
      * @return
      */
     @PostMapping("updateFileSize")
-    public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId, HttpSession session) {
+    public ResponseEntity<String> updateFileSize(@RequestParam("fileId") Integer fileId,
+                                                 HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
         Long size = updateFileSizeById(fileId, user.getUserId(), fileMapper, chunkMapper, fileChunkMapper);
         return ResponseEntity.ok().body(size + " ");

@@ -1,9 +1,8 @@
 package com.yg.mydrive.entity;
 
 public class Files {
-    public int fileId;
+    public Integer fileId;
     public String fileName;
-    public String fileHash;
     public long fileSize;
     public int totalChunks;
     public Integer folderId;
@@ -14,18 +13,17 @@ public class Files {
     public String status;
     public String deleteTime;
 
-    public Files(String fileName, String fileHash, int totalChunks, Integer folderId, Integer userId, String uploadTime) {
+    public Files(String fileName, int totalChunks, Integer folderId, Integer userId, Boolean versionControlEnabled, String uploadTime) {
         this.fileName = fileName;
-        this.fileHash = fileHash;
         this.totalChunks = totalChunks;
         this.folderId = folderId;
         this.userId = userId;
+        this.versionControlEnabled = versionControlEnabled;
         this.uploadTime = uploadTime;
     }
 
-    public Files(String fileName, String fileHash, int totalChunks, long fileSize, Integer folderId, Integer userId, String uploadTime) {
+    public Files(String fileName, int totalChunks, long fileSize, Integer folderId, Integer userId, String uploadTime) {
         this.fileName = fileName;
-        this.fileHash = fileHash;
         this.totalChunks = totalChunks;
         this.fileSize = fileSize;
         this.folderId = folderId;
@@ -33,9 +31,8 @@ public class Files {
         this.uploadTime = uploadTime;
     }
 
-    public Files(String fileName, String fileHash, int totalChunks, Integer userId, String uploadTime) {
+    public Files(String fileName, int totalChunks, Integer userId, String uploadTime) {
         this.fileName = fileName;
-        this.fileHash = fileHash;
         this.totalChunks = totalChunks;
         this.userId = userId;
         this.uploadTime = uploadTime;
@@ -46,7 +43,6 @@ public class Files {
         return "Files{" +
                 "fileId=" + fileId +
                 ", fileName='" + fileName + '\'' +
-                ", fileHash='" + fileHash + '\'' +
                 ", fileSize=" + fileSize +
                 ", totalChunks=" + totalChunks +
                 ", folderId=" + folderId +
@@ -57,11 +53,8 @@ public class Files {
 
     public Files() {}
 
-    public Files(String fileHash) {
-        this.fileHash = fileHash;
-    }
 
-    public int getFileId() {
+    public Integer getFileId() {
         return fileId;
     }
 
@@ -75,14 +68,6 @@ public class Files {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
-    }
-
-    public String getFileHash() {
-        return fileHash;
-    }
-
-    public void setFileHash(String fileHash) {
-        this.fileHash = fileHash;
     }
 
     public long getFileSize() {

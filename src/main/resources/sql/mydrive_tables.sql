@@ -51,13 +51,13 @@ create table file_chunk(
 # 创建版本控制表
 create table file_version(
     id INT PRIMARY KEY AUTO_INCREMENT,
-    fileId INT NOT NULL,
-    version_number INT UNSIGNED NOT NULL COMMENT '版本序号',
+    file_id INT NOT NULL,
+    version_number INT UNSIGNED DEFAULT 0 NOT NULL COMMENT '版本序号',
     message VARCHAR(255) COMMENT '备注信息',
     upload_time DATETIME
 );
 # 添加file_version的外键
-ALTER TABLE file_version ADD FOREIGN KEY (fileId) REFERENCES file(id);
+ALTER TABLE file_version ADD FOREIGN KEY (file_id) REFERENCES file(id);
 
 # 创建文件夹表
 create table folder(
