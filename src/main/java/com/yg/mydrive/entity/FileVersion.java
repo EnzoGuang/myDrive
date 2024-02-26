@@ -17,6 +17,11 @@ public class FileVersion {
         this.uploadTime = uploadTime;
     }
 
+    public FileVersion(Integer fileId, Integer versionNumber) {
+        this.fileId = fileId;
+        this.versionNumber = versionNumber;
+    }
+
     public FileVersion(Integer fileId) {
         this.fileId = fileId;
     }

@@ -1,5 +1,6 @@
 package com.yg.mydrive.web;
 
+import com.yg.mydrive.entity.FileVersion;
 import com.yg.mydrive.entity.Files;
 import com.yg.mydrive.entity.Folder;
 import com.yg.mydrive.entity.User;
@@ -173,11 +174,12 @@ public class UserManipulateController {
     public ResponseEntity<Map<String, Object>> initializeFileUpload(@RequestParam String fileName,
                                                        @RequestParam Integer totalChunks,
                                                        @RequestParam(value = "parentFolderId", required = false) Integer parentFolderId,
-                                                       @RequestParam(value = "versionControlEnabled", defaultValue = "false") Boolean versionControlEnabled,
+                                                       @RequestParam(value = "versionControlEnabled", required = false, defaultValue = "false") Boolean versionControlEnabled,
+                                                       @RequestParam(value = "updateVersion", required = false, defaultValue = "false") Boolean updateVersion,
                                                        HttpSession session) {
         User user = (User) session.getAttribute("currentUser");
-        Files file = initializeUpload(fileName, totalChunks, user, parentFolderId, versionControlEnabled, fileMapper, fileVersionMapper);
         Map<String, Object> responseBody = new HashMap<>();
+        Files file = initializeUpload(fileName, totalChunks, user, parentFolderId, versionControlEnabled, fileMapper, fileVersionMapper);
         if (file.getFileId() != null) {
             responseBody.put("fileId", file.getFileId());
             Integer versionId = file.getCurrentVersionId();
@@ -187,6 +189,46 @@ public class UserManipulateController {
             responseBody.put("error", "服务端文件初始化操作失败");
             return ResponseEntity.internalServerError().body(responseBody);
         }
+    }
+
+    @PostMapping("fileNewVersionInitialize")
+    public ResponseEntity<Map<String, Object>> uploadFileNewVersion(@RequestParam("fileId") Integer fileId,
+                                                       HttpSession session) {
+        User user = (User) session.getAttribute("currentUser");
+        Map<String, Object> responseBody = new HashMap<>();
+        Files file = fileMapper.getFileById(fileId, user.getUserId());
+        Integer versionNumber = fileVersionMapper.getMaxVersionNumber(fileId);
+        Integer newVersionNumber = versionNumber + 1;
+
+        // 生成新的file-version记录
+        FileVersion fileVersion = new FileVersion(file.getFileId(), newVersionNumber);
+        fileVersionMapper.createNewFileVersion(fileVersion);
+        // 获得新生成记录了的id
+        Integer currentFileVersionId = fileVersion.getFileVersionId();
+        // 更新文件记录的当前版本id
+        fileMapper.updateVersionId(file.getFileId(), currentFileVersionId);
+        responseBody.put("fileVersionId", currentFileVersionId);
+        return ResponseEntity.ok().body(responseBody);
+    }
+
+    /**
+     * 为已上传文件开启版本控制
+     * @param fileId
+     * @param httpSession
+     * @return
+     */
+    @PostMapping("openVersionControl")
+    public ResponseEntity<String> openVersionControl(@RequestParam("fileId") Integer fileId,
+                                                     HttpSession httpSession) {
+        User user = (User) httpSession.getAttribute("currentUser");
+        Integer versionId = handleOpenVersionControl(fileId, user, fileMapper, fileChunkMapper, fileVersionMapper);
+        return ResponseEntity.ok().body("versionId: " + versionId);
+    }
+
+    @PostMapping("fetchFileVersions")
+    public ResponseEntity<List<FileVersion>> fetchFileVersions(@RequestParam("fileId") Integer fileId) {
+        List<FileVersion> fileVersionList = fileVersionMapper.getAllVersionByFileId(fileId);
+        return ResponseEntity.ok().body(fileVersionList);
     }
 
     /**

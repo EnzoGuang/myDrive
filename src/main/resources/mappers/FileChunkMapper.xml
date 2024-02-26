@@ -8,6 +8,11 @@
             values (#{fileChunk.fileId}, #{fileChunk.chunkId}, #{fileChunk.chunkIndex}, #{fileChunk.versionId}, #{fileChunk.uploadTime})
     </insert>
 
+    <!-- 更新file-chunk记录的版本id -->
+    <update id="updateVersionId">
+        update file_chunk set version_id = #{versionId} where id = #{fileChunkId}
+    </update>
+
     <!-- 通过文件id和版本id获得所有分片的id,id按照分片的序号从小到大排列 -->
     <select id="getAllChunksId" resultType="java.lang.Integer">
         select chunk_id
@@ -31,6 +36,12 @@
             version_id versionId
         from file_chunk
         where file_id = #{fileId}
+        <if test="versionId != null">
+            and version_id = #{versionId}
+        </if>
+        <if test="versionId == null">
+            and version_id is null
+        </if>
         order by chunk_index asc
     </select>
 

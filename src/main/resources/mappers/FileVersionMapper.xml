@@ -6,4 +6,26 @@
     <insert id="initializeFileVersion" useGeneratedKeys="true" keyProperty="fileVersion.fileVersionId" keyColumn="id">
         insert into file_version (file_id, upload_time) values (#{fileVersion.fileId}, NOW());
     </insert>
+
+    <!-- 已开启版本控制文件创建新的记录 -->
+    <insert id="createNewFileVersion" useGeneratedKeys="true" keyProperty="fileVersion.fileVersionId" keyColumn="id">
+        insert into file_version (file_id, version_number, upload_time)
+        values (#{fileVersion.fileId}, #{fileVersion.versionNumber}, NOW());
+    </insert>
+
+    <!-- 获得文件版本最大的序号 -->
+    <select id="getMaxVersionNumber" resultType="java.lang.Integer" >
+        select max(file_version.version_number) from file_version where file_id = #{fileId};
+    </select>
+
+    <select id="getAllVersionByFileId" resultType="com.yg.mydrive.entity.FileVersion">
+        select id fileVersionId,
+            file_id fileId,
+            version_number versionNumber,
+            message,
+            upload_time uploadTime
+        from file_version
+        where file_id = #{fileId}
+        order by version_number desc
+    </select>
 </mapper>

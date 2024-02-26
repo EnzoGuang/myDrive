@@ -121,6 +121,46 @@ public class FileService {
         return file;
     }
 
+    public static void updateFileVersion(String fileName,
+                                         Integer totalChunks,
+                                         User user,
+                                         Integer parentFolderId,
+                                         FileMapper fileMapper,
+                                         FileChunkMapper fileChunkMapper,
+                                         FileVersionMapper fileVersionMapper) {
+
+    }
+
+    /**
+     * 将已上传的文件开启版本控制
+     * @param fileId
+     * @param user
+     * @param fileMapper
+     * @param fileChunkMapper
+     * @param fileVersionMapper
+     * @return
+     */
+    public static Integer handleOpenVersionControl(Integer fileId,
+                                                                  User user,
+                                                                  FileMapper fileMapper,
+                                                                  FileChunkMapper fileChunkMapper,
+                                                                  FileVersionMapper fileVersionMapper) {
+        Files file = fileMapper.getFileById(fileId, user.getUserId());
+        List<FileChunk> allFileChunks = fileChunkMapper.getAllFileChunkByFileId(file.getFileId(), file.getCurrentVersionId());
+        FileVersion fileVersion = new FileVersion(file.getFileId());
+        // 初始化版本控制记录
+        fileVersionMapper.initializeFileVersion(fileVersion);
+        // 更新该文件的版本id
+        Integer versionId = fileVersion.getFileVersionId();
+        fileMapper.versionControlEnable(file.getFileId());
+        fileMapper.updateVersionId(file.getFileId(), versionId);
+        // 更新file-chunk表该文件记录的versionId
+        for (FileChunk fileChunk: allFileChunks) {
+            fileChunkMapper.updateVersionId(fileChunk.getFileChunkId(), versionId);
+        }
+        return versionId;
+    }
+
     /**
      * 通过chunkHash判断该分片是否已经存储在服务端,如果已经存在需要增加该分片的引用次数,并更新file-chunk表
      * @param chunkHash
@@ -655,7 +695,7 @@ public class FileService {
         fileMapper.generateShareFileRecord(newFile);
 
         // 获得原文件的所有文件分片记录,然后插入新记录
-        List<FileChunk> fileChunks = fileChunkMapper.getAllFileChunkByFileId(originalFileId);
+        List<FileChunk> fileChunks = fileChunkMapper.getAllFileChunkByFileId(file.getFileId(), file.getCurrentVersionId());
         for (FileChunk fileChunk: fileChunks) {
             // TODO 需要考虑版本控制
             fileChunkMapper.insertFileChunk(new FileChunk(newFile.getFileId(), fileChunk.getChunkId(), fileChunk.getChunkIndex(), getTime()));

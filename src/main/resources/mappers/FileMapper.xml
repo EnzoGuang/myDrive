@@ -102,6 +102,11 @@
         update file set current_version_id = #{versionId} where id = #{fileId}
     </update>
 
+    <!-- 开启文件版本控制 -->
+    <update id="versionControlEnable">
+        update file set version_control_enabled = true where id = #{fileId};
+    </update>
+
     <!-- 获得删除的文件不属于任何已删除的文件夹 -->
     <select id="findFilesNotInDeletedFolders" resultType="com.yg.mydrive.entity.Files">
         WITH RECURSIVE deleted_folders AS (

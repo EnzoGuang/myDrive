@@ -15,6 +15,9 @@ public interface FileMapper {
     // 初始化文件记录,并返回文件id值 ;
     int initializeFile(@Param("file") Files file);
 
+    // 开启文件版本控制
+    int versionControlEnable(@Param("fileId") Integer fileId);
+
     // 更新文件的版本id号
     int updateVersionId(@Param("fileId") Integer fileId, @Param("versionId") Integer versionId);
 

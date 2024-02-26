@@ -17,6 +17,7 @@ public interface FileChunkMapper {
     List<Integer> getAllChunksId(@Param("fileId") Integer fileId, @Param("versionId") Integer versionId);
 
     // 通过fileId获得所有的FileChunk记录
-    List<FileChunk> getAllFileChunkByFileId(@Param("fileId") Integer fileId);
+    List<FileChunk> getAllFileChunkByFileId(@Param("fileId") Integer fileId, @Param("versionId") Integer versionId);
 
+    int updateVersionId(@Param("fileChunkId") Integer fileChunkId, @Param("versionId") Integer versionId);
 }

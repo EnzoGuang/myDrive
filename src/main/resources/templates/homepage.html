@@ -146,7 +146,7 @@
 							<span>[[${file.getFileName()}]]</span>
 						</div>
 						<div class="d-flex align-items-center justify-content-end">
-							<img th:if="${file.getVersionControlEnabled()}" th:src="@{/icon/cloud-check.svg}" alt="Version-Control" class="img-fluid mr-2"></img>
+							<img th:if="${file.getVersionControlEnabled()}" th:src="@{/icon/green-check.png}"  alt="Version-Control" class="img-fluid mr-2">
 							<div class="me-2">
 								<span th:if="${file.getFileSize() < 1024}">1 KB</span>
 								<span th:if="${file.getFileSize() >= 1024 and file.getFileSize() < 1024.0 * 1024.0 }">[[${#numbers.formatDecimal(file.getFileSize() / 1024.0, 1, 2)}]] KB</span>
@@ -167,12 +167,16 @@
 									<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="generateShareLink(this.getAttribute('data-file-id'))">生成分享链接</a>
 									<!-- 根据版本控制状态显示不同选项 -->
 									<div th:if="${file.versionControlEnabled}">
-										// TODO 完成上传新版本逻辑
-										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item">上传新版本</a>
+										<a href="#" th:data-file-id="${file.getFileId()}" id="uploadNewVersion" onclick="triggerFileNewVersionUpload(this.getAttribute('data-file-id'))" class="dropdown-item">上传新版本</a>
+										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="loadAndShowFileVersions(this.getAttribute('data-file-id'))">显示版本信息</a>
+										<!-- 隐藏的文件选择输入 -->
+										<input type="file" id="newVersionFileInput" style="display: none;">
+										<!-- 动态显示的上传按钮，初始时隐藏 -->
+										<button id="uploadNewVersionBtn" class="btn-primary" style="display: none;">点击上传新版本</button>
+
 									</div>
 									<div th:if="${!file.versionControlEnabled}">
-										// TODO 完成开启版本控制
-										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item">开启版本控制</a>
+										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="openVersionControl(this.getAttribute('data-file-id'))">开启版本控制</a>
 									</div>
 								</div>
 							</div>
@@ -181,6 +185,116 @@
 				</li>
 			</ul>
 		</div>
+		<script>
+			function openVersionControl(fileId) {
+				const formData = new FormData()
+				formData.append('fileId', fileId);
+
+				fetch('/user/openVersionControl', {
+					method: 'POST',
+					body: formData
+				})
+					.then(response => {
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						window.location.reload();
+						return response.text();
+					})
+					.then(text => {
+						// 这里的text就是后端返回的内容， "versionId: 123"
+						console.log(text);
+						const versionId = text.split(': ')[1]; // 假设返回格式是 "versionId: 123"
+					})
+					.catch(error => {
+						console.error('There was a problem with your fetch openVersionControl operation:', error);
+					});
+
+			}
+
+
+		</script>
+
+
+		<!-- 显示版本信息模态框 -->
+		<div class="modal fade" id="fileVersionsModal" tabindex="-1" aria-labelledby="fileVersionsModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="fileVersionsModalLabel">文件版本记录</h5>
+					</div>
+					<div class="modal-body">
+						<!-- 文件版本列表将在这里插入 -->
+						<div id="fileVersionsList" class="container"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<script>
+			async function loadAndShowFileVersions(fileId) {
+				// 模拟获取文件版本的异步请求
+				const fileVersions = await fetchFileVersions(fileId); // 假设这个函数返回文件版本的数组
+				const fileVersionsList = document.getElementById('fileVersionsList');
+
+				// 清除旧的列表项
+				fileVersionsList.innerHTML = '';
+
+				// 添加新的列表项到模态框
+				fileVersions.forEach(version => {
+					const card = document.createElement('div');
+					card.classList.add('card', 'mb-3');
+
+					const cardBody = document.createElement('div');
+					cardBody.classList.add('card-body');
+
+					const versionTitle = document.createElement('h5');
+					versionTitle.classList.add('card-title');
+					versionTitle.innerHTML = `<i class="fas fa-code-branch"></i> 版本 ${version.versionNumber}`;
+
+					const uploadTime = document.createElement('p');
+					uploadTime.classList.add('card-text');
+					uploadTime.innerHTML = `<small class="text-muted">上传时间: ${version.uploadTime}</small>`;
+
+					const message = document.createElement('p');
+					message.classList.add('card-text');
+					message.textContent = version.message || '无描述信息';
+
+					cardBody.appendChild(versionTitle);
+					cardBody.appendChild(uploadTime);
+					cardBody.appendChild(message);
+					card.appendChild(cardBody);
+					fileVersionsList.appendChild(card);
+				});
+
+				// 使用Bootstrap的方法显示模态框
+				var myModal = new bootstrap.Modal(document.getElementById('fileVersionsModal'), {
+					keyboard: false
+				});
+				myModal.show();
+			}
+
+			async function fetchFileVersions(fileId) {
+				const formData = new FormData();
+				formData.append('fileId', fileId);
+
+				const response = await fetch('/user/fetchFileVersions', {
+					method: 'POST',
+					body: formData
+				});
+
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return await response.json(); // 假设服务器返回JSON格式的文件版本信息
+			}
+
+		</script>
+
 
 		<!-- 模态框 进行文件重命名 -->
 		<div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
@@ -358,7 +472,7 @@
 				<!-- 进度信息 -->
 				<div id="progressText" class="progress-text mb-3"></div>
 			</form>
-			<button id="uploadButton" class="btn btn-danger">上传文件</button>
+			<button id="uploadButton" class="btn btn-danger" onclick="upload()">上传文件</button>
 			<!-- hash值计算状态 -->
 			<div id="hashStatus" class="hash-status mt-3"></div>
 		</div>
@@ -373,9 +487,101 @@
 			// 监听文件选择变化
 			document.getElementById('fileInput').addEventListener('change', (event) => {
 				selectedFile = event.target.files[0]; // 保存选中的文件
+				console.log(selectedFile.toString());
 			});
 
-			document.getElementById('uploadButton').addEventListener('click', async () => {
+
+			// 上传文件的新版本
+			async function triggerFileNewVersionUpload(fileId) {
+				const fileInput = document.getElementById('newVersionFileInput'); // 触发文件选择
+				fileInput.click();
+				let fileNewVersion;
+
+				fileInput.onchange = null;
+				// 仅为新的选择添加事件监听器，避免重复注册事件
+				fileInput.onchange = async (event) => {
+					fileNewVersion = event.target.files[0]; // 获取选中的文件
+					if (fileNewVersion) {
+						console.log("选中的文件名: ", fileNewVersion.name); // 打印文件名
+						const uploadButton = document.getElementById('uploadNewVersionBtn');
+
+						// 重新绑定上传按钮的点击事件，确保每次文件选择后只绑定一次
+						uploadButton.style.display = 'none';
+						// 设置分片大小位10MB
+						const chunkSize = 10 * 1024 * 1024;
+						const totalChunks = Math.ceil(fileNewVersion.size / chunkSize);
+						let uploadSuccess = true; // 追踪文件上传是否成功
+
+						const fileVersionId = await fileNewVersionInitialize(fileId);
+						for (let i = 0; i < totalChunks; i++) {
+							const chunk = fileNewVersion.slice(i * chunkSize, (i + 1) * chunkSize);
+							const chunkHash = await calculateHash(chunk)
+							console.log(`Chunk ${i}: Hash: ${chunkHash}`);
+
+							// 检查分片是否需要上传,如果服务端存储该分片则不用上传
+							const chunkExist = await checkChunkExist(chunkHash, fileId, i, fileVersionId);
+							if (chunkExist) {
+								console.log(`Chunk ${i} already exists, skipping upload.`);
+								updateProgress(i + 1, totalChunks);
+								continue;
+							}
+							const formData = new FormData();
+
+							formData.append('chunk', chunk);
+							formData.append('fileId', fileId);
+							formData.append('parentFolderId', parentFolderId);
+							formData.append('chunkIndex', i);
+							formData.append('chunkHash', chunkHash);
+							formData.append('totalChunks', totalChunks);
+							formData.append('versionId', fileVersionId);
+
+							try {
+								const response = await fetch('/user/uploadChunk', {
+									method: 'POST',
+									body: formData
+								});
+								// if (!response.ok) {
+								// 	throw new Error('Upload chunk' + i + ' fail');
+								// }
+								//更新进度条
+								updateProgress(i + 1, totalChunks);
+							} catch (error) {
+								console.error(error);
+								alert(`上传失败: ${error.message}`);
+								uploadSuccess = false;
+								break;
+							}
+						}
+					}
+				};
+			}
+
+			// 已开启版本控制的文件需要上传新版本初始化
+			async function fileNewVersionInitialize(fileId) {
+				const formData = new FormData();
+				formData.append('fileId', fileId);
+
+				try {
+					const response = await fetch('/user/fileNewVersionInitialize', {
+						method: 'POST',
+						body: formData
+					});
+					if (!response.ok) {
+						throw new Error('Network response was not ok');
+					}
+					const data = await response.json(); // 服务器返回的是JSON格式
+					const fileVersionId = data.fileVersionId; // 根据实际返回的JSON结构来获取fileVersionId
+					console.log('file-version-id: ' + fileVersionId);
+					return fileVersionId; // 返回fileVersionId
+				} catch (error) {
+					console.error('Error during fetch: ', error);
+					return null; // 在出现错误时返回null或适当的错误处理
+				}
+			}
+
+			// 全新文件上传
+			// document.getElementById('uploadButton').addEventListener('click', async () => {
+			async function upload() {
 				if (selectedFile) {
 					// showHashCalculationStatus('正在计算文件哈希,请稍候...');
 					// const fileHash = await calculateHash(selectedFile);
@@ -447,7 +653,7 @@
 				} else {
 					alert("请先选择一个文件! ");
 				}
-			})
+			}
 
 			// 文件上传初始化操作,返回文件id和版本id
 			async function initializeFileUpload(fileName, totalChunks, parentFolderId, versionControlEnabled) {
