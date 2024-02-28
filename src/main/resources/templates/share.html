@@ -16,12 +16,16 @@
 
 	</head>
 	<body>
-		<p th:text="${sharingFile.getFileName()}"></p>
 		<div class="container mt-5">
 			<h2>文件分享详情</h2>
 			<div class="alert alert-info" role="alert">
 				<p>文件名: <span th:text="${sharingFile.getFileName()}"></span></p>
-				<p>文件大小: <span th:text="${sharingFile.getFileSize()}"></span></p>
+				<p>文件大小:
+					<span th:if="${sharingFile.getFileSize() < 1024}">1 KB</span>
+					<span th:if="${sharingFile.getFileSize() >= 1024 and sharingFile.getFileSize() < 1024.0 * 1024.0 }">[[${#numbers.formatDecimal(sharingFile.getFileSize() / 1024.0, 1, 2)}]] KB</span>
+					<span th:if="${sharingFile.getFileSize() >= 1024 * 1024 and sharingFile.getFileSize() < 1024.0 * 1024.0 * 1024.0}">[[${#numbers.formatDecimal(sharingFile.getFileSize() / (1024.0 * 1024.0), 1, 2)}]]MB</span>
+					<span th:if="${sharingFile.getFileSize() >= 1024 * 1024 * 1024}">[[${#numbers.formatDecimal(sharingFile.getFileSize() / (1024.0 * 1024.0 * 1024.0), 1, 2)}]] GB</span>
+				</p>
 				<!-- 显示更多文件信息 -->
 			</div>
 			<button id="saveFileBtn" class="btn btn-success" th:attr="data-logged-in=${session.isLoggedIn}">保存文件</button>
@@ -45,7 +49,7 @@
 							<div class="form-group">
 								<label for="password">密码</label>
 								<input type="password" class="form-control" id="password" placeholder="密码" required>
-								<input type="text" th:value="${data}" id="data">
+								<input type="hidden" th:value="${data}" id="data">
 							</div>
 							<div class="form-group">
 								<button type="submit" class="btn btn-primary">登录</button>

@@ -243,7 +243,7 @@
 			}
 
 			async function loadAndShowFileVersions(fileId, currentVersionId) {
-				const fileVersions = await fetchFileVersions(fileId); // 假设这个函数返回文件版本的数组
+				const fileVersions = await fetchFileVersions(fileId);
 				const fileVersionsList = document.getElementById('fileVersionsList');
 
 				fileVersionsList.innerHTML = ''; // 清除旧的列表项
@@ -347,7 +347,7 @@
 				if (!response.ok) {
 					throw new Error('Network response was not ok');
 				}
-				return await response.json(); // 假设服务器返回JSON格式的文件版本信息
+				return await response.json(); // 服务器返回JSON格式的文件版本信息
 			}
 
 			// 更新版本的描述信息
@@ -381,9 +381,7 @@
 				const formData = new FormData();
 				formData.append('fileId', fileId);
 				formData.append('resetId', resetVersionId);
-				// 发送重置到特定版本的请求
-				// 可以将versionNumber发送到服务器端进行处理，重置文件到该版本状态
-				// 示例如下，实际应根据后端API进行修改
+
 				const response = await fetch('/user/resetToVersion', {
 					method: 'POST',
 					body: formData
@@ -397,7 +395,6 @@
 
 				setValueToGlobalCurrentVersionId(resetVersionId);
 				await loadAndShowFileVersions(fileId, globalCurrentVersionId);
-				// 重置成功后刷新页面或执行其他操作
 				console.log('Reset to version successful');
 			}
 		</script>
