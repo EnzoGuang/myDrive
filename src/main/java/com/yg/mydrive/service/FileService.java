@@ -86,6 +86,7 @@ public class FileService {
             if (chunkFileStatus.isUploadComplete()) {
                 // 文件的所有分片都上传完毕后,更新文件表添加该文件的大小
                 fileMapper.updateFileSize(fileId, chunkFileStatus.getTotalSize());
+                statusMap.remove(fileId);
                 return ResponseEntity.ok().body("FileId: " + fileId + " upload successful");
             }
             return ResponseEntity.ok().body("FileId: " + fileId + " Chunk: " + chunkIndex + " uploaded successful");

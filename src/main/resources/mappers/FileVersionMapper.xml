@@ -18,6 +18,7 @@
         select max(file_version.version_number) from file_version where file_id = #{fileId};
     </select>
 
+    <!-- 获得所有文件-版本对象 -->
     <select id="getAllVersionByFileId" resultType="com.yg.mydrive.entity.FileVersion">
         select id fileVersionId,
             file_id fileId,
@@ -28,4 +29,10 @@
         where file_id = #{fileId}
         order by version_number desc
     </select>
+
+    <!-- 更新描述信息 -->
+    <update id="updateDescription">
+        update file_version set message = #{description} where id = #{fileVersionId};
+    </update>
+
 </mapper>

@@ -232,6 +232,43 @@ public class UserManipulateController {
     }
 
     /**
+     * 更新文件版本控制描述信息
+     * @param versionId
+     * @param newDescription
+     * @return
+     */
+    @PostMapping("updateDescription")
+    public ResponseEntity<String> updateDescription(@RequestParam("versionId") Integer versionId,
+                                                    @RequestParam("newDescription") String newDescription) {
+        int result = fileVersionMapper.updateDescription(versionId, newDescription);
+        if (result != 0) {
+            return ResponseEntity.ok().body("update description successful!");
+        } else {
+            return ResponseEntity.internalServerError().body("update description failed.");
+        }
+    }
+
+    @PostMapping("resetToVersion")
+    public ResponseEntity<String> resetToVersion(@RequestParam("fileId") Integer fileId,
+                                                 @RequestParam("resetId") Integer resetId) {
+        // 更新文件表的该文件的current_version_id
+        fileMapper.updateVersionId(fileId, resetId);
+        // 通过file_id 和 version_id 获得所有分片chunk_id, 计算该版本文件大小
+        List<Integer> chunksId = fileChunkMapper.getAllChunksId(fileId, resetId);
+        long size = 0L;
+        for (Integer chunkId: chunksId) {
+            size += chunkMapper.getChunkSize(chunkId);
+        }
+        // 更新文件大小
+        int result = fileMapper.updateFileSize(fileId, size);
+        if (result != 0) {
+            return ResponseEntity.ok().body("reset version: " + resetId + " successful!");
+        } else {
+            return ResponseEntity.internalServerError().body("reset version: " + resetId + " failed.");
+        }
+    }
+
+    /**
      * 判断分片是否已经在服务端存储,如果分片存在需要增加该分片的引用次数
      * @param chunkHash
      * @return
