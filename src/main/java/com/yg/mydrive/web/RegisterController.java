@@ -23,7 +23,13 @@ public class RegisterController {
 
     @PostMapping("registerSave")
     public String registerSave(User user, ModelMap modelMap) {
-        userMapper.createUser(user);
-        return "registerSuccess";
+        User newUser = userMapper.findUserByEmail(user.getEmail());
+        if (newUser == null) {
+            userMapper.createUser(user);
+            return "registerSuccess";
+        } else {
+            modelMap.put("error", "此邮箱已被其他用户使用，请使用别的邮箱");
+            return "register";
+        }
     }
 }

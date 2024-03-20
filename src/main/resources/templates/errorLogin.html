@@ -11,11 +11,13 @@
 		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
 	</head>
 	<body>
-		<div>
-			<p th:text="${error}" style="color: red;"></p>
+		<div class="container mt-5">
+			<div class="alert alert-warning" role="alert">
+				<p th:text="${error}"></p>
+			</div>
+			<div class="mt-3">
+				<a href="/index" class="btn btn-primary">返回首页</a>
+			</div>
 		</div>
-		没有此用户，请
-		<a href="/index">返回首页</a>
-		进行用户注册
 	</body>
 </html>

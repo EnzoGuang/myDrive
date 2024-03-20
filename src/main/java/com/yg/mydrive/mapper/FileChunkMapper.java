@@ -10,7 +10,6 @@ import java.util.List;
 @Mapper
 public interface FileChunkMapper {
     // 将文件分片关联关系插入表中
-    @Options(useGeneratedKeys = true, keyProperty = "fileChunk.fileChunkId", keyColumn = "id")
     int insertFileChunk(@Param("fileChunk") FileChunk fileChunk);
 
     // 通过文件id和版本id获得所有分片的id

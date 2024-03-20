@@ -177,8 +177,9 @@ public class FileService {
             chunkMapper.updateReferenceCountByHash(chunkId, chunkHash);
 
             // 更新file-chunk表
-            fileChunkMapper.insertFileChunk(new FileChunk(fileId, chunkId, versionId, chunkIndex, getTime()));
-            return chunkId;
+            FileChunk fileChunk = new FileChunk(fileId, chunkId, chunkIndex, versionId, getTime());
+            fileChunkMapper.insertFileChunk(fileChunk);
+            return fileChunk.getChunkId();
         }
         return null;
     }
@@ -264,6 +265,15 @@ public class FileService {
         return resultTime;
     }
 
+    /**
+     * 更新文件大小
+     * @param fileId
+     * @param userId
+     * @param fileMapper
+     * @param chunkMapper
+     * @param fileChunkMapper
+     * @return
+     */
     public static Long updateFileSizeById(Integer fileId, Integer userId, FileMapper fileMapper, ChunkMapper chunkMapper, FileChunkMapper fileChunkMapper) {
         Files currentFile = fileMapper.getFileById(fileId, userId);
         if (currentFile.getFileSize() == 0) {
@@ -279,11 +289,20 @@ public class FileService {
     }
 
 
+    /**
+     * 处理文件下载
+     * @param fileId
+     * @param user
+     * @param fileMapper
+     * @param chunkMapper
+     * @param fileChunkMapper
+     * @return
+     */
     public static ResponseEntity<StreamingResponseBody> handleDownloadFile(Integer fileId,
                                                                            User user,
                                                                            FileMapper fileMapper,
                                                                            ChunkMapper chunkMapper,
-                                                                           FileChunkMapper fileChunkMapper) throws UnsupportedEncodingException {
+                                                                           FileChunkMapper fileChunkMapper) {
         Files file = fileMapper.getFileById(fileId, user.getUserId());
         // 获得所有分片的路径
         List<Path> chunkPaths = getChunkPaths(file.getFileId(), file.getCurrentVersionId(), chunkMapper, fileChunkMapper);

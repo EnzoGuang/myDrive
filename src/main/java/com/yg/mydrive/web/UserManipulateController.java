@@ -277,7 +277,16 @@ public class UserManipulateController {
     public ResponseEntity<String> checkChunkExist(@RequestParam("chunkHash") String chunkHash,
                                                   @RequestParam("fileId") Integer fileId,
                                                   @RequestParam("chunkIndex") Integer chunkIndex,
-                                                  @RequestParam(required = false, value = "versionId") Integer versionId) {
+                                                  @RequestParam(required = false, value = "versionId") String versionIdStr) {
+        Integer versionId = null; // 初始化为null，表示可选
+        if (versionIdStr != null && !versionIdStr.equals("undefined")) {
+            try {
+                versionId = Integer.valueOf(versionIdStr);
+            } catch (NumberFormatException e) {
+                // 如果versionIdStr不是一个有效的整数，可以返回错误信息或者默认处理
+                return ResponseEntity.badRequest().body("Invalid versionId value");
+            }
+        }
         Integer chunkId= checkChunkHashIfExists(chunkHash, fileId, chunkIndex, versionId, chunkMapper, fileChunkMapper);
         return ResponseEntity.ok(chunkId != null ? "true": "false");
     }

@@ -11,25 +11,31 @@
 		<link th:href="@{/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
 	</head>
 	<body>
-		<div class="container mt-5">
-			<div class="row">
-				<div class="col-md-6 offset-md-3">
-					<h2 class="mb-3">Register</h2>
+		<div th:insert="~{common :: myDriveHeaderBootstrap}"></div>
+
+		<div class="container py-5">
+			<div class="row justify-content-center">
+				<div class="col-md-8 col-lg-6">
+					<h2 class="mb-3">注册</h2>
 					<!-- 注册表单 -->
 					<form action="registerSave" method="post">
+						<!-- 显示错误消息 -->
+						<div th:if="${error}" class="alert alert-danger" role="alert">
+							<p th:text="${error}"></p>
+						</div>
 						<!-- 输入邮箱 -->
-						<div class="form-group">
-							<label for="email">邮箱</label>
+						<div class="mb-3">
+							<label for="email" class="form-label">邮箱</label>
 							<input type="text" class="form-control" id="email" name="email" placeholder="请输入邮箱" required>
 						</div>
 						<!-- 输入密码  -->
-						<div class="form-group">
-							<label for="password">密码</label>
+						<div class="mb-3">
+							<label for="password" class="form-label">密码</label>
 							<input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
 						</div>
 						<!-- 输入用户名 -->
-						<div class="form-group">
-							<label for="userName">用户名</label>
+						<div class="mb-3">
+							<label for="userName" class="form-label">用户名</label>
 							<input type="text" class="form-control" id="userName" name="userName" placeholder="请输入用户名" required>
 						</div>
 						<button type="submit" class="btn btn-primary btn-lg">注册</button>
@@ -39,5 +45,6 @@
 				</div>
 			</div>
 		</div>
+
 	</body>
 </html>
