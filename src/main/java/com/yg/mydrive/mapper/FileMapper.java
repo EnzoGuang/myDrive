@@ -18,6 +18,9 @@ public interface FileMapper {
     // 开启文件版本控制
     int versionControlEnable(@Param("fileId") Integer fileId);
 
+    // 获得当前版本id
+    int getCurrentVersionId(@Param("fileId") Integer fileId);
+
     // 更新文件的版本id号
     int updateVersionId(@Param("fileId") Integer fileId, @Param("versionId") Integer versionId);
 

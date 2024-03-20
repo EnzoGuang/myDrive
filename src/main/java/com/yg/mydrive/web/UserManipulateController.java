@@ -231,6 +231,16 @@ public class UserManipulateController {
         return ResponseEntity.ok().body(fileVersionList);
     }
 
+    @PostMapping("currentFileVersionId")
+    public ResponseEntity<Integer> getCurrentFileVersionId(@RequestParam("fileId") Integer fileId) {
+        Integer currentVersionId = fileMapper.getCurrentVersionId(fileId);
+        if (currentVersionId != null) {
+            return ResponseEntity.ok(currentVersionId);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     /**
      * 更新文件版本控制描述信息
      * @param versionId

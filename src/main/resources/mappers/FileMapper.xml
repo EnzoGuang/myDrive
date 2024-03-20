@@ -133,4 +133,9 @@
         where not exists (select 1 from deleted_folders df where f.folder_id = df.id)
         and f.status = 'deleted' and f.user_id = #{userId}
     </select>
+
+    <!-- 获得当前版本id -->
+    <select id="getCurrentVersionId" resultType="java.lang.Integer">
+        select current_version_id from file where id = #{fileId};
+    </select>
 </mapper>

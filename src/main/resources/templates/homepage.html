@@ -168,7 +168,7 @@
 									<!-- 根据版本控制状态显示不同选项 -->
 									<div th:if="${file.versionControlEnabled}">
 										<a href="#" th:data-file-id="${file.getFileId()}" id="uploadNewVersion" onclick="triggerFileNewVersionUpload(this.getAttribute('data-file-id'))" class="dropdown-item">上传新版本</a>
-										<a href="#" th:data-file-id="${file.getFileId()}" th:data-version-id="${file.getCurrentVersionId()}" class="dropdown-item" onclick="loadAndShowFileVersions(this.getAttribute('data-file-id'), this.getAttribute('data-version-id')); setValueToGlobalCurrentVersionId(this.getAttribute('data-version-id'))">显示版本信息</a>
+										<a href="#" th:data-file-id="${file.getFileId()}" class="dropdown-item" onclick="loadAndShowFileVersions(this.getAttribute('data-file-id'))">显示版本信息</a>
 										<!-- 隐藏的文件选择输入 -->
 										<input type="file" id="newVersionFileInput" style="display: none;">
 										<!-- 动态显示的上传按钮，初始时隐藏 -->
@@ -236,13 +236,8 @@
 
 
 		<script>
-			let globalCurrentVersionId;
-
-			function setValueToGlobalCurrentVersionId(globalVersionId) {
-				globalCurrentVersionId = globalVersionId;
-			}
-
-			async function loadAndShowFileVersions(fileId, currentVersionId) {
+			async function loadAndShowFileVersions(fileId) {
+				const currentVersionId = await getCurrentVersionId(fileId);
 				const fileVersions = await fetchFileVersions(fileId);
 				const fileVersionsList = document.getElementById('fileVersionsList');
 
@@ -301,7 +296,7 @@
 					const actionCol = document.createElement('div');
 					actionCol.classList.add('col-md-4', 'text-md-right');
 
-					// 创建描述信息表单，这里仅示例，具体实现可根据需求调整
+					// 创建描述信息表单
 					const descriptionForm = document.createElement('form');
 					descriptionForm.classList.add('form-group', 'mb-2');
 
@@ -350,6 +345,25 @@
 				return await response.json(); // 服务器返回JSON格式的文件版本信息
 			}
 
+			// 获得当前版本id
+			async function getCurrentVersionId(fileId) {
+				try {
+					const formData = new FormData();
+					formData.append('fileId', fileId);
+					const response = await fetch('/user/currentFileVersionId', {
+						method: 'POST',
+						body: formData
+					});
+					if (!response.ok) {
+						throw new Error('Network response was not ok');
+					}
+					const currentVersionId = await response.text();
+					return currentVersionId;
+				} catch (error) {
+					console.error("Failed to fetch current version ID:", error);
+				}
+			}
+
 			// 更新版本的描述信息
 			async function updateDescription(fileId, versionId) {
 				const descriptionInputId = `descriptionInput-${versionId}`;
@@ -372,11 +386,12 @@
 					return;
 				}
 				descriptionInput.value = '';
-				await loadAndShowFileVersions(fileId, globalCurrentVersionId);
+				await loadAndShowFileVersions(fileId);
 
 				console.log('Description updated successfully');
 			}
 
+			// 重置到指定版本
 			async function resetToVersion(fileId, resetVersionId) {
 				const formData = new FormData();
 				formData.append('fileId', fileId);
@@ -393,8 +408,8 @@
 					return;
 				}
 
-				setValueToGlobalCurrentVersionId(resetVersionId);
-				await loadAndShowFileVersions(fileId, globalCurrentVersionId);
+				// setValueToGlobalCurrentVersionId(resetVersionId);
+				await loadAndShowFileVersions(fileId);
 				console.log('Reset to version successful');
 			}
 		</script>
